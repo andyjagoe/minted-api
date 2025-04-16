@@ -1,0 +1,111 @@
+{
+  "projectStructure": {
+    "apiRoutes": {
+      "path": "app/api",
+      "conventions": {
+        "fileNaming": "route.ts",
+        "subdirectories": ["users", "posts"],
+        "dynamicRoutes": "[param]"
+      }
+    },
+    "types": {
+      "path": "lib/types",
+      "conventions": {
+        "fileNaming": "*.types.ts",
+        "preferredInterface": "interface over type"
+      }
+    },
+    "utils": {
+      "path": "lib/utils"
+    },
+    "models": {
+      "path": "lib/models"
+    },
+    "sourceCode": {
+      "path": "src",
+      "condition": "if project grows large"
+    }
+  },
+  "apiConventions": {
+    "responseFormat": {
+      "success": "{ data: T, error: null }",
+      "error": "{ data: null, error: string }"
+    },
+    "httpStatusCodes": {
+      "success": 200,
+      "badRequest": 400,
+      "notFound": 404,
+      "serverError": 500,
+      "unauthorized": 401,
+      "forbidden": 403
+    }
+  },
+  "typescript": {
+    "strictMode": true,
+    "typeConventions": {
+      "inputValidation": "unknown with zod/yup",
+      "avoid": "any",
+      "preferred": "explicit types"
+    }
+  },
+  "errorHandling": {
+    "format": "{ data: null, error: 'Error message' }",
+    "logging": ["Sentry", "LogRocket", "console (dev)"]
+  },
+  "database": {
+    "orm": ["Prisma", "Drizzle"],
+    "schemaLocation": ["lib/models", "schema/"],
+    "connection": "environment variables"
+  },
+  "authentication": {
+    "methods": ["JWT", "OAuth"],
+    "middleware": "middleware.ts",
+    "logicLocation": "lib/auth/"
+  },
+  "validation": {
+    "libraries": ["zod", "yup"],
+    "schemaLocation": "lib/types/"
+  },
+  "performance": {
+    "caching": "Next.js API route caching",
+    "pagination": "?page=1&limit=20",
+    "queryOptimization": true
+  },
+  "testing": {
+    "unitTests": {
+      "location": "lib/utils/",
+      "framework": ["Jest", "Vitest"]
+    },
+    "integrationTests": {
+      "location": "tests/api/",
+      "mocking": "@prisma/client mocks"
+    }
+  },
+  "documentation": {
+    "methods": ["JSDoc", "Swagger/OpenAPI"],
+    "location": ["api-docs.md", "Swagger UI"]
+  },
+  "environment": {
+    "configuration": ".env",
+    "ignored": ".gitignore",
+    "nextConfig": "next.config.js"
+  },
+  "codeStyle": {
+    "tools": ["ESLint", "Prettier"],
+    "naming": {
+      "interfaces": "PascalCase",
+      "variables": "camelCase",
+      "functions": "camelCase"
+    }
+  },
+  "iosIntegration": {
+    "cors": "next.config.js",
+    "payloadFormat": "JSON",
+    "endpoints": ["/api/auth/login", "/api/users/me"],
+    "optimization": "mobile network constraints"
+  },
+  "dependencies": {
+    "updateFrequency": "regular",
+    "nextjsVersion": "14+"
+  }
+} 
