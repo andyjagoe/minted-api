@@ -8,7 +8,7 @@ export default function ApiDocs() {
         <div className="container flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <FileJson className="h-5 w-5" />
-            <span>API Docs</span>
+            <span>Minted Mobile API Docs</span>
           </Link>
           <nav className="ml-auto flex gap-4">
             <Link href="/" className="text-sm font-medium hover:underline">
@@ -26,10 +26,10 @@ export default function ApiDocs() {
       <main className="flex-1 container py-12">
         <div className="flex flex-col gap-8 max-w-3xl mx-auto">
           <div>
-            <h1 className="text-3xl font-bold mb-4">API Documentation</h1>
+            <h1 className="text-3xl font-bold mb-4">Minted Mobile API Documentation</h1>
             <p className="text-muted-foreground">
               This documentation provides information about the available REST API endpoints, request/response formats,
-              and examples.
+              and examples for the Minted Mobile API.
             </p>
           </div>
 
@@ -170,7 +170,7 @@ export default function ApiDocs() {
       <footer className="w-full border-t py-6">
         <div className="container flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-muted-foreground">
-            © 2025 REST API. All rights reserved.
+            © 2025 Minted Mobile API. All rights reserved.
           </p>
         </div>
       </footer>

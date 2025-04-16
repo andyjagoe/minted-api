@@ -8,7 +8,7 @@ export default function Home() {
         <div className="container flex h-16 items-center">
           <div className="flex items-center gap-2 font-bold">
             <Server className="h-5 w-5" />
-            <span>REST API</span>
+            <span>Minted Mobile API</span>
           </div>
           <nav className="ml-auto flex gap-4">
             <Link
@@ -29,7 +29,7 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Modern REST API with Next.js
+                  Minted Mobile API
                 </h1>
                 <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
                   A type-safe REST API built with Next.js and TypeScript, ready for your iOS and web clients.
@@ -107,7 +107,7 @@ export default function Home() {
       <footer className="w-full border-t py-6">
         <div className="container flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-muted-foreground">
-            © 2025 REST API. All rights reserved.
+            © 2025 Minted Mobile API. All rights reserved.
           </p>
         </div>
       </footer>
