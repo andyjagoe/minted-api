@@ -107,5 +107,14 @@
   "dependencies": {
     "updateFrequency": "regular",
     "nextjsVersion": "14+"
+  },
+  "packageManager": {
+    "name": "pnpm",
+    "commands": {
+      "install": "pnpm install",
+      "add": "pnpm add",
+      "remove": "pnpm remove",
+      "run": "pnpm run"
+    }
   }
 } 
