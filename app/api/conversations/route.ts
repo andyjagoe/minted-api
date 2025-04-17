@@ -3,6 +3,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
 import { conversationSchema } from '@/lib/types/conversation.types';
 import { v7 as uuidv7 } from 'uuid';
+import { ZodError } from 'zod';
 
 export async function POST(request: Request) {
   try {
@@ -62,6 +63,15 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error('Error creating conversation:', error);
+    
+    // Handle validation errors
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { data: null, error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { data: null, error: 'Failed to create conversation' },
       { status: 500 }
