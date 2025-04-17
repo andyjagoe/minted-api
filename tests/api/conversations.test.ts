@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { POST } from '@/app/api/conversations/route';
+import { GET, POST } from '@/app/api/conversations/route';
 import { dynamoDB } from '@/lib/utils/dynamodb';
 import { conversationSchema } from '@/lib/types/conversation.types';
 import { currentUser } from '@clerk/nextjs/server';
@@ -9,6 +9,7 @@ import { ZodError } from 'zod';
 vi.mock('@/lib/utils/dynamodb', () => ({
   dynamoDB: {
     put: vi.fn(),
+    query: vi.fn(),
   },
 }));
 
@@ -43,6 +44,98 @@ describe('Conversations API', () => {
     vi.mocked(conversationSchema.parse).mockImplementation((data: unknown) => ({
       title: (data as { title: string }).title,
     }));
+  });
+
+  describe('GET /api/conversations', () => {
+    it('should return conversations for authenticated user', async () => {
+      const mockConversations = [
+        {
+          pk: 'CHAT#conv-1',
+          sk: 'CHAT#test-user-id',
+          title: 'Test Conversation 1',
+          createdAt: 1234567890,
+          lastModified: 1234567890,
+        },
+        {
+          pk: 'CHAT#conv-2',
+          sk: 'CHAT#test-user-id',
+          title: 'Test Conversation 2',
+          createdAt: 1234567891,
+          lastModified: 1234567891,
+        },
+      ];
+
+      vi.mocked(dynamoDB.query).mockResolvedValueOnce({
+        Items: mockConversations,
+        $metadata: {
+          httpStatusCode: 200,
+          requestId: 'test-request-id',
+          attempts: 1,
+          totalRetryDelay: 0,
+        },
+      } as any);
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({
+        data: [
+          {
+            id: 'conv-1',
+            title: 'Test Conversation 1',
+            createdAt: 1234567890,
+            lastModified: 1234567890,
+          },
+          {
+            id: 'conv-2',
+            title: 'Test Conversation 2',
+            createdAt: 1234567891,
+            lastModified: 1234567891,
+          },
+        ],
+        error: null,
+      });
+    });
+
+    it('should return 401 for unauthenticated user', async () => {
+      vi.mocked(currentUser).mockResolvedValue(null);
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data).toEqual({
+        data: null,
+        error: 'Unauthorized',
+      });
+    });
+
+    it('should return 500 when table name is not configured', async () => {
+      delete process.env.DYNAMODB_TABLE_NAME;
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data).toEqual({
+        data: null,
+        error: 'Table name not configured',
+      });
+    });
+
+    it('should return 500 when DynamoDB query fails', async () => {
+      vi.mocked(dynamoDB.query).mockRejectedValueOnce(new Error('DynamoDB error'));
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data).toEqual({
+        data: null,
+        error: 'Failed to fetch conversations',
+      });
+    });
   });
 
   it('should create a conversation successfully', async () => {
