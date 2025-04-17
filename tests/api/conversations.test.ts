@@ -51,14 +51,14 @@ describe('Conversations API', () => {
       const mockConversations = [
         {
           pk: 'CHAT#conv-1',
-          sk: 'CHAT#test-user-id',
+          sk: 'USER#test-user-id',
           title: 'Test Conversation 1',
           createdAt: 1234567890,
           lastModified: 1234567890,
         },
         {
           pk: 'CHAT#conv-2',
-          sk: 'CHAT#test-user-id',
+          sk: 'USER#test-user-id',
           title: 'Test Conversation 2',
           createdAt: 1234567891,
           lastModified: 1234567891,

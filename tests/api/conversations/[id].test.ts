@@ -58,7 +58,7 @@ describe('Conversation API - [id]', () => {
       vi.mocked(dynamoDB.update).mockResolvedValueOnce({
         Attributes: {
           pk: `CHAT#${mockParams.id}`,
-          sk: 'CHAT#test-user-id',
+          sk: 'USER#test-user-id',
           type: 'CHAT',
           title: mockBody.title,
           lastModified: Date.now(),

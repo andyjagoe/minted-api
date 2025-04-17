@@ -33,7 +33,7 @@ export async function PUT(
     const now = Date.now();
     const item = {
       pk: `CHAT#${id}`,
-      sk: `CHAT#${user.id}`,
+      sk: `USER#${user.id}`,
       type: 'CHAT',
       title,
       lastModified: now,
@@ -43,7 +43,7 @@ export async function PUT(
       TableName: tableName,
       Key: {
         pk: `CHAT#${id}`,
-        sk: `CHAT#${user.id}`
+        sk: `USER#${user.id}`
       },
       UpdateExpression: 'SET #title = :title, lastModified = :lastModified',
       ExpressionAttributeNames: {
@@ -53,7 +53,7 @@ export async function PUT(
         ':title': title,
         ':lastModified': now,
         ':pk': `CHAT#${id}`,
-        ':sk': `CHAT#${user.id}`
+        ':sk': `USER#${user.id}`
       },
       ConditionExpression: 'pk = :pk AND sk = :sk',
       ReturnValues: 'ALL_NEW',
@@ -112,12 +112,12 @@ export async function DELETE(
       TableName: tableName,
       Key: {
         pk: `CHAT#${id}`,
-        sk: `CHAT#${user.id}`,
+        sk: `USER#${user.id}`,
       },
       ConditionExpression: 'pk = :pk AND sk = :sk',
       ExpressionAttributeValues: {
         ':pk': `CHAT#${id}`,
-        ':sk': `CHAT#${user.id}`,
+        ':sk': `USER#${user.id}`,
       },
     });
 

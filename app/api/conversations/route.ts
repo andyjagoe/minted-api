@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const item = {
       pk: `CHAT#${id}`,
-      sk: `CHAT#${user.id}`,
+      sk: `USER#${user.id}`,
       type: 'CHAT',
       title,
       createdAt: now,
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       ConditionExpression: 'pk <> :pkVal AND sk <> :skVal',
       ExpressionAttributeValues: {
         ':pkVal': `CHAT#${id}`,
-        ':skVal': `CHAT#${user.id}`,
+        ':skVal': `USER#${user.id}`,
       },
     });
 
@@ -105,7 +105,7 @@ export async function GET() {
       ExpressionAttributeValues: {
         ':pk': 'CHAT',
         ':now': Date.now(),
-        ':sk': `CHAT#${user.id}`,
+        ':sk': `USER#${user.id}`,
       },
       ScanIndexForward: false, // Sort by most recent first
     });
