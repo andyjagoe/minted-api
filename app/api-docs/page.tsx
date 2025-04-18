@@ -1,10 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
-import { FileJson } from "lucide-react";
-import Link from "next/link";
 
 const SwaggerUIDynamic = dynamic(
   () => import('swagger-ui-react').then((mod) => mod.default),

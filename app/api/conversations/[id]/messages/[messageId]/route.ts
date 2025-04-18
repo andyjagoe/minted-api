@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
-import { conversationSchema } from '@/lib/types/conversation.types';
+import { messageUpdateSchema } from '@/lib/types/message.types';
 import { ZodError } from 'zod';
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string; messageId: string } }
 ) {
   try {
     const user = await currentUser();
@@ -17,10 +17,10 @@ export async function PUT(
       );
     }
 
-    const { id } = await params;
+    const { messageId } = await params;
     const body = await request.json();
-    const validatedData = conversationSchema.parse(body);
-    const { title } = validatedData;
+    const validatedData = messageUpdateSchema.parse(body);
+    const { content } = validatedData;
 
     const tableName = process.env.DYNAMODB_TABLE_NAME;
     if (!tableName) {
@@ -35,11 +35,11 @@ export async function PUT(
       TableName: tableName,
       Key: {
         pk: `USER#${user.id}`,
-        sk: `CHAT#${id}`,
+        sk: `MSG#${messageId}`,
       },
-      UpdateExpression: 'SET title = :title, lastModified = :lastModified',
+      UpdateExpression: 'SET content = :content, lastModified = :lastModified',
       ExpressionAttributeValues: {
-        ':title': title,
+        ':content': content,
         ':lastModified': now,
       }
     });
@@ -47,7 +47,7 @@ export async function PUT(
     return NextResponse.json(
       { 
         data: {
-          id,
+          id: messageId,
           ...updateResult.Attributes,
         },
         error: null 
@@ -55,7 +55,7 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error updating conversation:', error);
+    console.error('Error updating message:', error);
     
     if (error instanceof ZodError) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function PUT(
     }
 
     return NextResponse.json(
-      { data: null, error: 'Failed to update conversation' },
+      { data: null, error: 'Failed to update message' },
       { status: 500 }
     );
   }
@@ -73,7 +73,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string; messageId: string } }
 ) {
   try {
     const user = await currentUser();
@@ -84,7 +84,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const { messageId } = await params;
     const tableName = process.env.DYNAMODB_TABLE_NAME;
     if (!tableName) {
       return NextResponse.json(
@@ -93,51 +93,25 @@ export async function DELETE(
       );
     }
 
-    // First, get all messages for this conversation
-    const messagesResult = await dynamoDB.query({
-      TableName: tableName,
-      IndexName: 'GSI1',
-      KeyConditionExpression: 'GSI1PK = :GSI1PK',
-      ExpressionAttributeValues: {
-        ':GSI1PK': `USER#${user.id}#CHAT#${id}`,
-      },
-    });
-
-    // Delete all messages
-    if (messagesResult.Items && messagesResult.Items.length > 0) {
-      await Promise.all(
-        messagesResult.Items.map((message) =>
-          dynamoDB.delete({
-            TableName: tableName,
-            Key: {
-              pk: message.pk,
-              sk: message.sk,
-            },
-          })
-        )
-      );
-    }
-
-    // Delete the conversation
     await dynamoDB.delete({
       TableName: tableName,
       Key: {
         pk: `USER#${user.id}`,
-        sk: `CHAT#${id}`,
+        sk: `MSG#${messageId}`,
       },
     });
 
     return NextResponse.json(
       { 
-        data: { id },
+        data: { id: messageId },
         error: null 
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error deleting conversation:', error);
+    console.error('Error deleting message:', error);
     return NextResponse.json(
-      { data: null, error: 'Failed to delete conversation' },
+      { data: null, error: 'Failed to delete message' },
       { status: 500 }
     );
   }

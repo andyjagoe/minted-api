@@ -50,18 +50,22 @@ describe('Conversations API', () => {
     it('should return conversations for authenticated user', async () => {
       const mockConversations = [
         {
-          pk: 'CHAT#conv-1',
-          sk: 'USER#test-user-id',
+          pk: 'USER#test-user-id',
+          sk: 'CHAT#conv-1',
           title: 'Test Conversation 1',
           createdAt: 1234567890,
           lastModified: 1234567890,
+          GSI1PK: 'USER#test-user-id#CHAT',
+          GSI1SK: 1234567890,
         },
         {
-          pk: 'CHAT#conv-2',
-          sk: 'USER#test-user-id',
+          pk: 'USER#test-user-id',
+          sk: 'CHAT#conv-2',
           title: 'Test Conversation 2',
           createdAt: 1234567891,
           lastModified: 1234567891,
+          GSI1PK: 'USER#test-user-id#CHAT',
+          GSI1SK: 1234567891,
         },
       ];
 

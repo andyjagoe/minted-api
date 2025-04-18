@@ -31,13 +31,13 @@ export async function POST(request: Request) {
     }
 
     const item = {
-      pk: `CHAT#${id}`,
-      sk: `USER#${user.id}`,
+      pk: `USER#${user.id}`,
+      sk: `CHAT#${id}`,
       type: 'CHAT',
       title,
       createdAt: now,
       lastModified: now,
-      GSI1PK: 'CHAT',
+      GSI1PK: `USER#${user.id}#CHAT`,
       GSI1SK: now,
     };
 
@@ -46,8 +46,8 @@ export async function POST(request: Request) {
       Item: item,
       ConditionExpression: 'pk <> :pkVal AND sk <> :skVal',
       ExpressionAttributeValues: {
-        ':pkVal': `CHAT#${id}`,
-        ':skVal': `USER#${user.id}`,
+        ':pkVal': `USER#${user.id}`,
+        ':skVal': `CHAT#${id}`,
       },
     });
 
@@ -100,18 +100,15 @@ export async function GET() {
     const result = await dynamoDB.query({
       TableName: tableName,
       IndexName: 'GSI1',
-      KeyConditionExpression: 'GSI1PK = :pk AND GSI1SK <= :now',
-      FilterExpression: 'sk = :sk',
+      KeyConditionExpression: 'GSI1PK = :GSI1PK',
       ExpressionAttributeValues: {
-        ':pk': 'CHAT',
-        ':now': Date.now(),
-        ':sk': `USER#${user.id}`,
+        ':GSI1PK': `USER#${user.id}#CHAT`,
       },
       ScanIndexForward: false, // Sort by most recent first
     });
 
     const conversations = result.Items?.map(item => ({
-      id: item.pk.split('#')[1],
+      id: item.sk.split('#')[1],
       title: item.title,
       createdAt: item.createdAt,
       lastModified: item.lastModified,

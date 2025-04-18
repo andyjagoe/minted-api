@@ -10,6 +10,7 @@ vi.mock('@/lib/utils/dynamodb', () => ({
   dynamoDB: {
     update: vi.fn(),
     delete: vi.fn(),
+    query: vi.fn(),
   },
 }));
 
@@ -51,16 +52,16 @@ describe('Conversation API - [id]', () => {
   describe('PUT /api/conversations/[id]', () => {
     it('should update a conversation successfully', async () => {
       const mockBody = {
-        title: 'Updated Conversation Title',
+        title: 'Updated conversation title',
       };
 
-      // Mock successful DynamoDB update
+      // Mock successful update
       vi.mocked(dynamoDB.update).mockResolvedValueOnce({
         Attributes: {
-          pk: `CHAT#${mockParams.id}`,
-          sk: 'USER#test-user-id',
-          type: 'CHAT',
+          pk: 'USER#test-user-id',
+          sk: 'CHAT#test-conversation-id',
           title: mockBody.title,
+          type: 'CHAT',
           lastModified: Date.now(),
         },
       } as any);
@@ -71,15 +72,15 @@ describe('Conversation API - [id]', () => {
       expect(response.status).toBe(200);
       expect(data.error).toBeNull();
       expect(data.data.title).toBe(mockBody.title);
+      expect(data.data.type).toBe('CHAT');
       expect(dynamoDB.update).toHaveBeenCalled();
     });
 
     it('should return 401 when user is not authenticated', async () => {
-      // Mock unauthenticated user
       vi.mocked(currentUser).mockResolvedValue(null);
 
       const mockBody = {
-        title: 'Updated Conversation Title',
+        title: 'Updated conversation title',
       };
 
       const response = await PUT(mockRequest(mockBody), { params: mockParams });
@@ -90,39 +91,7 @@ describe('Conversation API - [id]', () => {
       expect(data.data).toBeNull();
     });
 
-    it('should return 500 when table name is not configured', async () => {
-      delete process.env.DYNAMODB_TABLE_NAME;
-
-      const mockBody = {
-        title: 'Updated Conversation Title',
-      };
-
-      const response = await PUT(mockRequest(mockBody), { params: mockParams });
-      const data = await response.json();
-
-      expect(response.status).toBe(500);
-      expect(data.error).toBe('Table name not configured');
-      expect(data.data).toBeNull();
-    });
-
-    it('should return 500 when DynamoDB update fails', async () => {
-      const mockError = new Error('DynamoDB error');
-      vi.mocked(dynamoDB.update).mockRejectedValueOnce(mockError);
-
-      const mockBody = {
-        title: 'Updated Conversation Title',
-      };
-
-      const response = await PUT(mockRequest(mockBody), { params: mockParams });
-      const data = await response.json();
-
-      expect(response.status).toBe(500);
-      expect(data.error).toBe('Failed to update conversation');
-      expect(data.data).toBeNull();
-    });
-
     it('should return 400 when request body validation fails', async () => {
-      // Mock schema validation to throw a ZodError
       vi.mocked(conversationSchema.parse).mockImplementation(() => {
         throw new ZodError([
           {
@@ -146,12 +115,71 @@ describe('Conversation API - [id]', () => {
       expect(data.error).toBe('Invalid request body');
       expect(data.data).toBeNull();
     });
+
+    it('should return 500 when table name is not configured', async () => {
+      delete process.env.DYNAMODB_TABLE_NAME;
+
+      const mockBody = {
+        title: 'Updated conversation title',
+      };
+
+      const response = await PUT(mockRequest(mockBody), { params: mockParams });
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Table name not configured');
+      expect(data.data).toBeNull();
+    });
+
+    it('should return 500 when DynamoDB update fails', async () => {
+      const mockError = new Error('DynamoDB error');
+      vi.mocked(dynamoDB.update).mockRejectedValueOnce(mockError);
+
+      const mockBody = {
+        title: 'Updated conversation title',
+      };
+
+      const response = await PUT(mockRequest(mockBody), { params: mockParams });
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Failed to update conversation');
+      expect(data.data).toBeNull();
+    });
   });
 
   describe('DELETE /api/conversations/[id]', () => {
-    it('should delete a conversation successfully', async () => {
-      // Mock successful DynamoDB delete
-      vi.mocked(dynamoDB.delete).mockResolvedValueOnce({} as any);
+    it('should delete a conversation and its messages successfully', async () => {
+      // Mock messages query result
+      const mockMessages = [
+        {
+          pk: 'USER#test-user-id',
+          sk: 'MSG#msg1',
+          type: 'MSG',
+          content: 'Message 1',
+          isFromUser: true,
+          conversationId: 'test-conversation-id',
+          createdAt: Date.now(),
+          lastModified: Date.now(),
+        },
+        {
+          pk: 'USER#test-user-id',
+          sk: 'MSG#msg2',
+          type: 'MSG',
+          content: 'Message 2',
+          isFromUser: true,
+          conversationId: 'test-conversation-id',
+          createdAt: Date.now(),
+          lastModified: Date.now(),
+        },
+      ];
+
+      vi.mocked(dynamoDB.query).mockResolvedValueOnce({
+        Items: mockMessages,
+      } as any);
+
+      // Mock successful deletes
+      vi.mocked(dynamoDB.delete).mockResolvedValue({} as any);
 
       const response = await DELETE(mockRequest({}), { params: mockParams });
       const data = await response.json();
@@ -159,11 +187,59 @@ describe('Conversation API - [id]', () => {
       expect(response.status).toBe(200);
       expect(data.error).toBeNull();
       expect(data.data.id).toBe(mockParams.id);
-      expect(dynamoDB.delete).toHaveBeenCalled();
+      
+      // Verify that messages were queried
+      expect(dynamoDB.query).toHaveBeenCalledWith({
+        TableName: 'test-table',
+        IndexName: 'GSI1',
+        KeyConditionExpression: 'GSI1PK = :GSI1PK',
+        ExpressionAttributeValues: {
+          ':GSI1PK': `USER#test-user-id#CHAT#${mockParams.id}`,
+        },
+      });
+
+      // Verify that all messages were deleted
+      expect(dynamoDB.delete).toHaveBeenCalledTimes(3); // 2 messages + 1 conversation
+      expect(dynamoDB.delete).toHaveBeenCalledWith({
+        TableName: 'test-table',
+        Key: {
+          pk: 'USER#test-user-id',
+          sk: 'CHAT#test-conversation-id',
+        },
+      });
+    });
+
+    it('should delete a conversation with no messages successfully', async () => {
+      // Mock empty messages query result
+      vi.mocked(dynamoDB.query).mockResolvedValueOnce({
+        Items: [],
+      } as any);
+
+      // Mock successful delete
+      vi.mocked(dynamoDB.delete).mockResolvedValue({} as any);
+
+      const response = await DELETE(mockRequest({}), { params: mockParams });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.error).toBeNull();
+      expect(data.data.id).toBe(mockParams.id);
+      
+      // Verify that messages were queried
+      expect(dynamoDB.query).toHaveBeenCalled();
+      
+      // Verify that only the conversation was deleted
+      expect(dynamoDB.delete).toHaveBeenCalledTimes(1);
+      expect(dynamoDB.delete).toHaveBeenCalledWith({
+        TableName: 'test-table',
+        Key: {
+          pk: 'USER#test-user-id',
+          sk: 'CHAT#test-conversation-id',
+        },
+      });
     });
 
     it('should return 401 when user is not authenticated', async () => {
-      // Mock unauthenticated user
       vi.mocked(currentUser).mockResolvedValue(null);
 
       const response = await DELETE(mockRequest({}), { params: mockParams });
@@ -185,9 +261,28 @@ describe('Conversation API - [id]', () => {
       expect(data.data).toBeNull();
     });
 
+    it('should return 500 when DynamoDB query fails', async () => {
+      vi.mocked(dynamoDB.query).mockRejectedValueOnce(new Error('DynamoDB error'));
+
+      const response = await DELETE(mockRequest({}), { params: mockParams });
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Failed to delete conversation');
+      expect(data.data).toBeNull();
+    });
+
     it('should return 500 when DynamoDB delete fails', async () => {
-      const mockError = new Error('DynamoDB error');
-      vi.mocked(dynamoDB.delete).mockRejectedValueOnce(mockError);
+      // Mock successful query
+      vi.mocked(dynamoDB.query).mockResolvedValueOnce({
+        Items: [{
+          pk: 'USER#test-user-id',
+          sk: 'MSG#msg1',
+        }],
+      } as any);
+
+      // Mock failed delete
+      vi.mocked(dynamoDB.delete).mockRejectedValueOnce(new Error('DynamoDB error'));
 
       const response = await DELETE(mockRequest({}), { params: mockParams });
       const data = await response.json();

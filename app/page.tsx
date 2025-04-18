@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Server } from "lucide-react"
+import { ArrowRight, Server, MessageSquare, Users } from "lucide-react"
 
 export default function Home() {
   return (
@@ -32,7 +32,7 @@ export default function Home() {
                   Minted Mobile API
                 </h1>
                 <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
-                  A type-safe REST API built with Next.js and TypeScript, ready for your iOS and web clients.
+                  A type-safe REST API built with Next.js and TypeScript, designed for chat-based applications with conversations and messages.
                 </p>
               </div>
               <div className="space-x-4">
@@ -63,7 +63,7 @@ export default function Home() {
                     <div className="rounded-full bg-primary/10 p-1">
                       <div className="h-2 w-2 rounded-full bg-primary"></div>
                     </div>
-                    <span>CORS configured for iOS and web clients</span>
+                    <span>Nested resources for conversations and messages</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
@@ -77,28 +77,68 @@ export default function Home() {
                     </div>
                     <span>Comprehensive error handling</span>
                   </li>
+                  <li className="flex items-center gap-2">
+                    <div className="rounded-full bg-primary/10 p-1">
+                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                    </div>
+                    <span>DynamoDB for scalable storage</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="rounded-full bg-primary/10 p-1">
+                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                    </div>
+                    <span>Authentication with Clerk</span>
+                  </li>
                 </ul>
               </div>
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl">API Endpoints</h2>
-                <ul className="grid gap-3">
-                  <li className="flex items-center gap-2">
-                    <code className="rounded bg-muted px-2 py-1">GET /api/users</code>
-                    <span>Get all users</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <code className="rounded bg-muted px-2 py-1">GET /api/users/:id</code>
-                    <span>Get user by ID</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <code className="rounded bg-muted px-2 py-1">POST /api/users</code>
-                    <span>Create a new user</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <code className="rounded bg-muted px-2 py-1">PUT /api/users/:id</code>
-                    <span>Update a user</span>
-                  </li>
-                </ul>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold">
+                      <MessageSquare className="h-5 w-5" />
+                      Conversations
+                    </h3>
+                    <ul className="mt-2 grid gap-2">
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">GET /api/conversations</code>
+                        <span>List conversations</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">POST /api/conversations</code>
+                        <span>Create conversation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">PUT /api/conversations/:id</code>
+                        <span>Update conversation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">DELETE /api/conversations/:id</code>
+                        <span>Delete conversation</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="flex items-center gap-2 text-lg font-semibold">
+                      <Users className="h-5 w-5" />
+                      Messages
+                    </h3>
+                    <ul className="mt-2 grid gap-2">
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">POST /api/conversations/:id/messages</code>
+                        <span>Create message</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">PUT /api/conversations/:id/messages/:messageId</code>
+                        <span>Update message</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1">DELETE /api/conversations/:id/messages/:messageId</code>
+                        <span>Delete message</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
