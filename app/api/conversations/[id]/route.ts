@@ -41,14 +41,17 @@ export async function PUT(
       ExpressionAttributeValues: {
         ':title': title,
         ':lastModified': now,
-      }
+      },
+      ReturnValues: 'ALL_NEW'
     });
 
     return NextResponse.json(
       { 
         data: {
           id,
-          ...updateResult.Attributes,
+          title: updateResult.Attributes?.title,
+          createdAt: updateResult.Attributes?.createdAt,
+          lastModified: updateResult.Attributes?.lastModified,
         },
         error: null 
       },

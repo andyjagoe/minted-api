@@ -41,14 +41,19 @@ export async function PUT(
       ExpressionAttributeValues: {
         ':content': content,
         ':lastModified': now,
-      }
+      },
+      ReturnValues: 'ALL_NEW'
     });
 
     return NextResponse.json(
       { 
         data: {
           id: messageId,
-          ...updateResult.Attributes,
+          content: updateResult.Attributes?.content,
+          isFromUser: updateResult.Attributes?.isFromUser,
+          conversationId: updateResult.Attributes?.conversationId,
+          createdAt: updateResult.Attributes?.createdAt,
+          lastModified: updateResult.Attributes?.lastModified,
         },
         error: null 
       },

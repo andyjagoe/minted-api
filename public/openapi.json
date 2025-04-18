@@ -35,46 +35,57 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "Unique identifier for the conversation"
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Title of the conversation"
           },
           "createdAt": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Timestamp when the conversation was created"
           },
           "lastModified": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Timestamp when the conversation was last modified"
           }
-        }
+        },
+        "required": ["id", "title", "createdAt", "lastModified"]
       },
       "Message": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "Unique identifier for the message"
           },
           "content": {
-            "type": "string"
+            "type": "string",
+            "description": "Content of the message"
           },
           "isFromUser": {
             "type": "boolean",
             "description": "Indicates whether the message is from the user (true) or the assistant (false)"
           },
           "conversationId": {
-            "type": "string"
+            "type": "string",
+            "description": "ID of the conversation this message belongs to"
           },
           "createdAt": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Timestamp when the message was created"
           },
           "lastModified": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Timestamp when the message was last modified"
           }
-        }
+        },
+        "required": ["id", "content", "isFromUser", "conversationId", "createdAt", "lastModified"]
       }
     }
   },
