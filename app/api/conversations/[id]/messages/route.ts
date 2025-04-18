@@ -4,6 +4,9 @@ import { dynamoDB } from '@/lib/utils/dynamodb';
 import { messageSchema } from '@/lib/types/message.types';
 import { v7 as uuidv7 } from 'uuid';
 import { ZodError } from 'zod';
+import { LLMService } from '@/lib/services/llm.service';
+import { LLMRequest } from '@/lib/types/llm.types';
+import { HumanMessage } from '@langchain/core/messages';
 
 export async function GET(
   request: Request,
@@ -59,6 +62,56 @@ export async function GET(
   }
 }
 
+async function createMessage(
+  userId: string,
+  conversationId: string,
+  content: string,
+  isFromUser: boolean
+) {
+  const tableName = process.env.DYNAMODB_TABLE_NAME;
+  if (!tableName) {
+    return NextResponse.json(
+      { data: null, error: 'Table name not configured' },
+      { status: 500 }
+    );
+  }
+
+  const messageId = uuidv7();
+  const now = Date.now();
+
+  const item = {
+    pk: `USER#${userId}`,
+    sk: `MSG#${messageId}`,
+    type: 'MSG',
+    content,
+    isFromUser: isFromUser,
+    conversationId,
+    createdAt: now,
+    lastModified: now,
+    GSI1PK: `USER#${userId}#CHAT#${conversationId}`,
+    GSI1SK: now,
+  };
+
+  await dynamoDB.put({
+    TableName: tableName,
+    Item: item,
+    ConditionExpression: 'pk <> :pkVal AND sk <> :skVal',
+    ExpressionAttributeValues: {
+      ':pkVal': `USER#${userId}`,
+      ':skVal': `MSG#${messageId}`,
+    },
+  });
+
+  return {
+    id: messageId,
+    content,
+    isFromUser: isFromUser,
+    conversationId,
+    createdAt: now,
+    lastModified: now,
+  };
+}
+
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -72,53 +125,34 @@ export async function POST(
       );
     }
 
-    const { id: conversationId } = await params;
-    const body = await request.json();
-    const validatedData = messageSchema.parse({ ...body, conversationId });
-    const { content } = validatedData;
-
-    const tableName = process.env.DYNAMODB_TABLE_NAME;
-    if (!tableName) {
+    const conversationId = await params.id;
+    if (!conversationId) {
       return NextResponse.json(
-        { data: null, error: 'Table name not configured' },
-        { status: 500 }
+        { data: null, error: 'Conversation ID is required' },
+        { status: 400 }
       );
     }
 
-    const messageId = uuidv7();
-    const now = Date.now();
+    const body = await request.json();
+    const validatedData = messageSchema.parse(body);
+    const { content } = validatedData;
 
-    const item = {
-      pk: `USER#${user.id}`,
-      sk: `MSG#${messageId}`,
-      type: 'MSG',
-      content,
-      isFromUser: true,
-      conversationId,
-      createdAt: now,
-      lastModified: now,
-      GSI1PK: `USER#${user.id}#CHAT#${conversationId}`,
-      GSI1SK: now,
+    const message = await createMessage(user.id, conversationId, content, true);
+
+    const llm = new LLMService();
+    const req: LLMRequest = {
+      messages: [
+        LLMService.createMessage(content, 'user')
+      ]
     };
+    const res = await llm.ask(req);
+    console.log('Response:', res.content);
 
-    await dynamoDB.put({
-      TableName: tableName,
-      Item: item,
-      ConditionExpression: 'pk <> :pkVal AND sk <> :skVal',
-      ExpressionAttributeValues: {
-        ':pkVal': `USER#${user.id}`,
-        ':skVal': `MSG#${messageId}`,
-      },
-    });
+    const response = await createMessage(user.id, conversationId, res.content, false);
 
     return NextResponse.json(
-      { 
-        data: {
-          id: messageId,
-          ...item,
-        },
-        error: null 
-      },
+      { data: { message, response }, 
+        error: null },
       { status: 201 }
     );
   } catch (error) {

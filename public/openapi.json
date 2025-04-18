@@ -442,7 +442,7 @@
       },
       "post": {
         "summary": "Create a message",
-        "description": "Create a new message in a conversation. All messages created through this endpoint will have isFromUser set to true.",
+        "description": "Create a new message in a conversation. The message will be automatically marked as from the user (isFromUser: true). The endpoint will also return the AI's response message.",
         "security": [
           {
             "bearerAuth": []
@@ -467,14 +467,23 @@
         },
         "responses": {
           "201": {
-            "description": "Message created",
+            "description": "Message created and AI response received",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/Message"
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "$ref": "#/components/schemas/Message"
+                        },
+                        "response": {
+                          "$ref": "#/components/schemas/Message"
+                        }
+                      },
+                      "required": ["message", "response"]
                     },
                     "error": {
                       "type": "null"
