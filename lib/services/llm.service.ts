@@ -1,5 +1,5 @@
-import { ChatOpenAI } from 'langchain/chat_models/openai';
-import { HumanMessage, AIMessage } from 'langchain/schema';
+import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { LLMRequest, LLMResponse, LLMConfig, LLMStreamResponse } from '@/lib/types/llm.types';
 
 export class LLMService {
