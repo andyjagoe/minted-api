@@ -6,7 +6,6 @@ import { v7 as uuidv7 } from 'uuid';
 import { ZodError } from 'zod';
 import { LLMService } from '@/lib/services/llm.service';
 import { LLMRequest } from '@/lib/types/llm.types';
-import { HumanMessage } from '@langchain/core/messages';
 
 export async function GET(
   request: Request,
@@ -37,7 +36,7 @@ export async function GET(
       ExpressionAttributeValues: {
         ':GSI1PK': `USER#${user.id}#CHAT#${conversationId}`,
       },
-      ScanIndexForward: false,
+      ScanIndexForward: true,
     });
 
     const messages = result.Items?.map(item => ({

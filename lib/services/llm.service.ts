@@ -1,6 +1,22 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { HumanMessage, AIMessage, MessageContent, MessageContentComplex } from '@langchain/core/messages';
 import { LLMRequest, LLMResponse, LLMConfig, LLMStreamResponse } from '@/lib/types/llm.types';
+
+function getMessageContent(content: MessageContent): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  // Handle complex content (like arrays of text/image content)
+  return content.map(item => {
+    if (typeof item === 'string') {
+      return item;
+    }
+    if ('text' in item) {
+      return item.text;
+    }
+    return '';
+  }).join('');
+}
 
 export class LLMService {
   private model: ChatOpenAI;
@@ -18,7 +34,7 @@ export class LLMService {
     const response = await this.model.invoke(request.messages);
     
     return {
-      content: response.content,
+      content: getMessageContent(response.content),
       role: 'assistant',
     };
   }
@@ -28,9 +44,10 @@ export class LLMService {
     
     let content = '';
     for await (const chunk of stream) {
-      content += chunk.content;
+      const chunkContent = getMessageContent(chunk.content);
+      content += chunkContent;
       yield {
-        content: chunk.content,
+        content: chunkContent,
         done: false,
       };
     }
