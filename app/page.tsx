@@ -8,7 +8,7 @@ export default function Home() {
         <div className="container flex h-16 items-center">
           <div className="flex items-center gap-2 font-bold">
             <Server className="h-5 w-5" />
-            <span>Minted Mobile API</span>
+            <span>Minted AI API</span>
           </div>
           <nav className="ml-auto flex gap-4">
             <Link
@@ -28,12 +28,8 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Minted Mobile API
-                </h1>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
-                  A type-safe REST API built with Next.js and TypeScript, designed for chat-based applications with conversations and messages.
-                </p>
+                <h1 className="text-4xl font-bold mb-4">Minted AI API</h1>
+                <p className="text-xl mb-8">Welcome to the Minted AI API documentation</p>
               </div>
               <div className="space-x-4">
                 <Link
@@ -51,7 +47,7 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="mx-auto grid max-w-5xl items-center gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl">Features</h2>
+                <h2 className="text-2xl font-bold mb-4">About</h2>
                 <ul className="grid gap-3">
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
@@ -92,7 +88,7 @@ export default function Home() {
                 </ul>
               </div>
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl">API Endpoints</h2>
+                <h2 className="text-2xl font-bold mb-4">Getting Started with Minted AI API</h2>
                 <div className="space-y-6">
                   <div>
                     <h3 className="flex items-center gap-2 text-lg font-semibold">
@@ -100,21 +96,21 @@ export default function Home() {
                       Conversations
                     </h3>
                     <ul className="mt-2 grid gap-2">
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">GET /api/conversations</code>
-                        <span>List conversations</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">GET /api/conversations</code>
+                        <span className="text-muted-foreground">List conversations</span>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">POST /api/conversations</code>
-                        <span>Create conversation</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">POST /api/conversations</code>
+                        <span className="text-muted-foreground">Create conversation</span>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">PUT /api/conversations/:id</code>
-                        <span>Update conversation</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">PUT /api/conversations/:id</code>
+                        <span className="text-muted-foreground">Update conversation</span>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">DELETE /api/conversations/:id</code>
-                        <span>Delete conversation</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">DELETE /api/conversations/:id</code>
+                        <span className="text-muted-foreground">Delete conversation</span>
                       </li>
                     </ul>
                   </div>
@@ -124,17 +120,21 @@ export default function Home() {
                       Messages
                     </h3>
                     <ul className="mt-2 grid gap-2">
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">POST /api/conversations/:id/messages</code>
-                        <span>Create message</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">GET /api/conversations/:id/messages</code>
+                        <span className="text-muted-foreground">List messages</span>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">PUT /api/conversations/:id/messages/:messageId</code>
-                        <span>Update message</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">POST /api/conversations/:id/messages</code>
+                        <span className="text-muted-foreground">Create message</span>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1">DELETE /api/conversations/:id/messages/:messageId</code>
-                        <span>Delete message</span>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">PUT /api/conversations/:id/messages/:messageId</code>
+                        <span className="text-muted-foreground">Update message</span>
+                      </li>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 min-w-[200px]">DELETE /api/conversations/:id/messages/:messageId</code>
+                        <span className="text-muted-foreground">Delete message</span>
                       </li>
                     </ul>
                   </div>
@@ -147,7 +147,7 @@ export default function Home() {
       <footer className="w-full border-t py-6">
         <div className="container flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-muted-foreground">
-            © 2025 Minted Mobile API. All rights reserved.
+            © 2025 Minted AI API. All rights reserved.
           </p>
         </div>
       </footer>

@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Minted Mobile API",
+    "title": "Minted AI API",
     "version": "1.0.0",
-    "description": "API documentation for Minted Mobile application"
+    "description": "API documentation for Minted AI application"
   },
   "servers": [
     {
