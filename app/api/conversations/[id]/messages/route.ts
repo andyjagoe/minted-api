@@ -104,44 +104,6 @@ async function createMessage(
   };
 }
 
-async function updateConversationTitle(
-  userId: string,
-  conversationId: string,
-  content: string,
-  tableName: string
-) {
-  const now = Date.now();
-  
-  const llm = new LLMService();
-  const req: LLMRequest = {
-    messages: [
-      LLMService.createMessage(`summarize the following message in 5 words or less: ${content}`, 'user')
-    ]
-  };
-  const res = await llm.ask(req);
-  console.log('Response:', res.content);
-
-  await dynamoDB.update({
-    TableName: tableName,
-    Key: {
-      pk: `USER#${userId}`,
-      sk: `CHAT#${conversationId}`,
-    },
-    UpdateExpression: 'SET title = :title, lastModified = :lastModified',
-    ExpressionAttributeValues: {
-      ':title': res.content,
-      ':lastModified': now
-    },
-    ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)',
-  });
-
-  return {
-    id: conversationId,
-    title: res.content,
-    lastModified: now,
-  };
-}
-
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -185,8 +147,6 @@ export async function POST(
     const res = await llm.ask(req);
 
     const response = await createMessage(user.id, conversationId, res.content, false, tableName);
-
-    await updateConversationTitle(user.id, conversationId, content, tableName);
 
     return NextResponse.json(
       { data: { message, response }, 

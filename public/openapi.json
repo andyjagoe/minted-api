@@ -374,6 +374,110 @@
             }
           }
         }
+      },
+      "/title": {
+        "post": {
+          "summary": "Generate and update conversation title",
+          "description": "Uses AI to generate a concise title (5 words or less) based on the provided content and updates the conversation",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string",
+                      "description": "Content to use for generating the title"
+                    }
+                  },
+                  "required": ["content"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Title generated and updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Conversation ID"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Generated title"
+                          },
+                          "lastModified": {
+                            "type": "integer",
+                            "format": "int64",
+                            "description": "Timestamp when the title was updated"
+                          }
+                        },
+                        "required": ["id", "title", "lastModified"]
+                      },
+                      "error": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Conversation not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Server error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/conversations/{id}/messages": {
