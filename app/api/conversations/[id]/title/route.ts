@@ -49,7 +49,7 @@ export async function POST(
     const req: LLMRequest = {
       messages: [
         LLMService.createMessage(
-          `Generate a concise, descriptive title (5 words or less) for a conversation that contains this content: "${content}"`,
+          `Generate a concise, descriptive title (4 words or less) for a conversation that contains this content: "${content}"`,
           'user'
         )
       ]
