@@ -3,13 +3,14 @@ import { GET, POST } from '@/app/api/conversations/[id]/messages/route';
 import { dynamoDB } from '@/lib/utils/dynamodb';
 import { messageSchema } from '@/lib/types/message.types';
 import { currentUser } from '@clerk/nextjs/server';
+import { LLMService } from '@/lib/services/llm.service';
 import { ZodError } from 'zod';
 
 // Mock DynamoDB
 vi.mock('@/lib/utils/dynamodb', () => ({
   dynamoDB: {
-    put: vi.fn(),
     query: vi.fn(),
+    put: vi.fn(),
   },
 }));
 
@@ -22,6 +23,20 @@ vi.mock('@clerk/nextjs/server', () => ({
 vi.mock('@/lib/types/message.types', () => ({
   messageSchema: {
     parse: vi.fn(),
+  },
+}));
+
+// Mock LLM service
+vi.mock('@/lib/services/llm.service', () => ({
+  LLMService: class {
+    ask = vi.fn().mockResolvedValue({
+      content: 'AI response',
+      isFromUser: false,
+    });
+    static createMessage = vi.fn().mockReturnValue({
+      content: 'User message',
+      role: 'user',
+    });
   },
 }));
 
@@ -93,9 +108,9 @@ describe('Conversation Messages API', () => {
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :GSI1PK',
         ExpressionAttributeValues: {
-          ':GSI1PK': 'USER#test-user-id#CHAT#test-conversation-id',
+          ':GSI1PK': `USER#test-user-id#CHAT#test-conversation-id`,
         },
-        ScanIndexForward: false,
+        ScanIndexForward: true,
       });
     });
 
@@ -147,10 +162,13 @@ describe('Conversation Messages API', () => {
 
       expect(response.status).toBe(201);
       expect(data.error).toBeNull();
-      expect(data.data.content).toBe(mockBody.content);
-      expect(data.data.isFromUser).toBe(true);
-      expect(data.data.conversationId).toBe(mockParams.id);
-      expect(dynamoDB.put).toHaveBeenCalled();
+      expect(data.data.message.content).toBe(mockBody.content);
+      expect(data.data.message.isFromUser).toBe(true);
+      expect(data.data.message.conversationId).toBe(mockParams.id);
+      expect(data.data.response.content).toBe('AI response');
+      expect(data.data.response.isFromUser).toBe(false);
+      expect(data.data.response.conversationId).toBe(mockParams.id);
+      expect(dynamoDB.put).toHaveBeenCalledTimes(2);
     });
 
     it('should return 401 when user is not authenticated', async () => {

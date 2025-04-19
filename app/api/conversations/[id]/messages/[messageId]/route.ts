@@ -49,11 +49,7 @@ export async function PUT(
       { 
         data: {
           id: messageId,
-          content: updateResult.Attributes?.content,
-          isFromUser: updateResult.Attributes?.isFromUser,
-          conversationId: updateResult.Attributes?.conversationId,
-          createdAt: updateResult.Attributes?.createdAt,
-          lastModified: updateResult.Attributes?.lastModified,
+          ...updateResult.Attributes,
         },
         error: null 
       },

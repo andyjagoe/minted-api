@@ -63,7 +63,7 @@ describe('Conversation Message API - [messageId]', () => {
           pk: 'USER#test-user-id',
           sk: 'MSG#test-message-id',
           content: mockBody.content,
-          role: 'user',
+          isFromUser: true,
           conversationId: 'test-conversation-id',
           lastModified: Date.now(),
         },
@@ -75,7 +75,7 @@ describe('Conversation Message API - [messageId]', () => {
       expect(response.status).toBe(200);
       expect(data.error).toBeNull();
       expect(data.data.content).toBe(mockBody.content);
-      expect(data.data.role).toBe('user');
+      expect(data.data.isFromUser).toBe(true);
       expect(data.data.conversationId).toBe('test-conversation-id');
       expect(dynamoDB.update).toHaveBeenCalled();
     });

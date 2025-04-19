@@ -49,9 +49,7 @@ export async function PUT(
       { 
         data: {
           id,
-          title: updateResult.Attributes?.title,
-          createdAt: updateResult.Attributes?.createdAt,
-          lastModified: updateResult.Attributes?.lastModified,
+          ...updateResult.Attributes,
         },
         error: null 
       },
