@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Server, MessageSquare, Users } from "lucide-react"
+import { ArrowRight, Server, MessageSquare, Users, Bot, Code, Shield, Database } from "lucide-react"
 
 export default function Home() {
   return (
@@ -7,12 +7,12 @@ export default function Home() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container flex h-16 items-center">
           <div className="flex items-center gap-2 font-bold">
-            <Server className="h-5 w-5" />
+            <Bot className="h-5 w-5" />
             <span>Minted AI API</span>
           </div>
           <nav className="ml-auto flex gap-4">
             <Link
-              href="https://github.com/yourusername/nextjs-rest-api"
+              href="https://github.com/yourusername/minted-api"
               className="text-sm font-medium hover:underline"
             >
               GitHub
@@ -29,7 +29,7 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-4xl font-bold mb-4">Minted AI API</h1>
-                <p className="text-xl mb-8">Welcome to the Minted AI API documentation</p>
+                <p className="text-xl mb-8">A modern REST API for AI-powered conversations</p>
               </div>
               <div className="space-x-4">
                 <Link
@@ -47,48 +47,42 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="mx-auto grid max-w-5xl items-center gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">About</h2>
+                <h2 className="text-2xl font-bold mb-4">Features</h2>
                 <ul className="grid gap-3">
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                      <Bot className="h-4 w-4 text-primary" />
                     </div>
-                    <span>Type-safe API endpoints with TypeScript</span>
+                    <span>AI-powered responses with LangChain</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                      <Code className="h-4 w-4 text-primary" />
                     </div>
-                    <span>Nested resources for conversations and messages</span>
+                    <span>Type-safe API with TypeScript</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                      <MessageSquare className="h-4 w-4 text-primary" />
                     </div>
-                    <span>Request validation with Zod</span>
+                    <span>Nested resources for conversations</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
-                    </div>
-                    <span>Comprehensive error handling</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="rounded-full bg-primary/10 p-1">
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
-                    </div>
-                    <span>DynamoDB for scalable storage</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="rounded-full bg-primary/10 p-1">
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                      <Shield className="h-4 w-4 text-primary" />
                     </div>
                     <span>Authentication with Clerk</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="rounded-full bg-primary/10 p-1">
+                      <Database className="h-4 w-4 text-primary" />
+                    </div>
+                    <span>DynamoDB for scalable storage</span>
                   </li>
                 </ul>
               </div>
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Getting Started with Minted AI API</h2>
+                <h2 className="text-2xl font-bold mb-4">API Endpoints</h2>
                 <div className="space-y-6">
                   <div>
                     <h3 className="flex items-center gap-2 text-lg font-semibold">
@@ -116,7 +110,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="flex items-center gap-2 text-lg font-semibold">
-                      <Users className="h-5 w-5" />
+                      <Bot className="h-5 w-5" />
                       Messages
                     </h3>
                     <ul className="mt-2 grid gap-2">
@@ -126,7 +120,7 @@ export default function Home() {
                       </li>
                       <li className="flex items-center gap-2 whitespace-nowrap">
                         <code className="rounded bg-muted px-2 py-1 min-w-[200px]">POST /api/conversations/:id/messages</code>
-                        <span className="text-muted-foreground">Create message</span>
+                        <span className="text-muted-foreground">Send message and get AI response</span>
                       </li>
                       <li className="flex items-center gap-2 whitespace-nowrap">
                         <code className="rounded bg-muted px-2 py-1 min-w-[200px]">PUT /api/conversations/:id/messages/:messageId</code>
@@ -147,7 +141,7 @@ export default function Home() {
       <footer className="w-full border-t py-6">
         <div className="container flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-muted-foreground">
-            © 2025 Minted AI API. All rights reserved.
+            © 2024 Minted AI API. All rights reserved.
           </p>
         </div>
       </footer>

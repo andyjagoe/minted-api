@@ -1,9 +1,10 @@
 # Minted AI API
 
-A modern REST API for managing conversations and messages, built with Next.js 14 and TypeScript.
+A modern REST API for AI-powered conversations, built with Next.js 14 and TypeScript.
 
 ## Features
 
+- 🤖 AI-powered responses using LangChain
 - 🔐 Authentication with Clerk
 - 💬 Conversation and message management
 - 📝 Type-safe API with TypeScript
@@ -15,10 +16,11 @@ A modern REST API for managing conversations and messages, built with Next.js 14
 
 - **Framework**: Next.js 14
 - **Language**: TypeScript
+- **AI Integration**: LangChain
 - **Authentication**: Clerk
 - **Database**: DynamoDB
 - **Validation**: Zod
-- **Testing**: Jest
+- **Testing**: Vitest
 - **Documentation**: OpenAPI/Swagger
 
 ## Getting Started
@@ -29,6 +31,7 @@ A modern REST API for managing conversations and messages, built with Next.js 14
 - pnpm
 - AWS account with DynamoDB access
 - Clerk account
+- OpenAI API key
 
 ### Installation
 
@@ -54,6 +57,7 @@ A modern REST API for managing conversations and messages, built with Next.js 14
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `AWS_REGION`
+   - `OPENAI_API_KEY`
 
 4. Start the development server:
    ```bash
@@ -71,14 +75,49 @@ The API documentation is available at `/api-docs` when running the application l
 - `GET /api/conversations` - List all conversations
 - `POST /api/conversations` - Create a new conversation
 - `PUT /api/conversations/:id` - Update a conversation
-- `DELETE /api/conversations/:id` - Delete a conversation
+- `DELETE /api/conversations/:id` - Delete a conversation and its messages
 
 #### Messages
 
 - `GET /api/conversations/:id/messages` - List all messages in a conversation
-- `POST /api/conversations/:id/messages` - Create a new message
-- `PUT /api/conversations/:id/messages/:messageId` - Update a message
+- `POST /api/conversations/:id/messages` - Create a new message and get AI response
+- `PUT /api/conversations/:id/messages/:messageId` - Update a message's content
 - `DELETE /api/conversations/:id/messages/:messageId` - Delete a message
+
+### Response Format
+
+All API responses follow this format:
+```typescript
+{
+  data: T | null;    // The response data or null if there's an error
+  error: string | null;  // Error message or null if successful
+}
+```
+
+For message creation, the response includes both the user message and AI response:
+```typescript
+{
+  data: {
+    message: {
+      id: string;
+      content: string;
+      isFromUser: true;
+      conversationId: string;
+      createdAt: number;
+      lastModified: number;
+    },
+    response: {
+      id: string;
+      content: string;
+      isFromUser: false;
+      conversationId: string;
+      createdAt: number;
+      lastModified: number;
+    }
+  },
+  error: null
+}
+```
 
 ## Testing
 
@@ -86,3 +125,13 @@ Run the test suite:
 ```bash
 pnpm test
 ```
+
+## Error Handling
+
+The API uses standard HTTP status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 404: Not Found
+- 500: Internal Server Error
