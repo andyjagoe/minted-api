@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Server, MessageSquare, Users, Bot, Code, Shield, Database } from "lucide-react"
+import { ArrowRight, Bot, Code, Shield, Database, MessageSquare, BookOpen } from "lucide-react"
 
 export default function Home() {
   return (

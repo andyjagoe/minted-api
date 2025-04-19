@@ -86,10 +86,64 @@
           }
         },
         "required": ["id", "content", "isFromUser", "conversationId", "createdAt", "lastModified"]
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/Message"
+          },
+          "response": {
+            "$ref": "#/components/schemas/Message"
+          }
+        },
+        "required": ["message", "response"]
       }
     }
   },
   "paths": {
+    "/me": {
+      "get": {
+        "summary": "Get current user",
+        "description": "Get information about the currently authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "description": "User object from Clerk"
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/conversations": {
       "get": {
         "summary": "Get all conversations",
@@ -248,9 +302,10 @@
                 "properties": {
                   "title": {
                     "type": "string",
-                    "description": "New conversation title"
+                    "description": "New title for the conversation"
                   }
-                }
+                },
+                "required": ["title"]
               }
             }
           }
@@ -294,16 +349,6 @@
               }
             }
           },
-          "404": {
-            "description": "Conversation not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Server error",
             "content": {
@@ -333,7 +378,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "null"
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      }
                     },
                     "error": {
                       "type": "null"
@@ -353,8 +403,99 @@
               }
             }
           },
-          "404": {
-            "description": "Conversation not found",
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{id}/title": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Conversation ID"
+        }
+      ],
+      "post": {
+        "summary": "Generate conversation title",
+        "description": "Generate a title for a conversation using AI",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Content to use for generating the title"
+                  }
+                },
+                "required": ["content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Title generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "lastModified": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      }
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -369,110 +510,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "/title": {
-        "post": {
-          "summary": "Generate and update conversation title",
-          "description": "Uses AI to generate a concise title (5 words or less) based on the provided content and updates the conversation",
-          "security": [
-            {
-              "bearerAuth": []
-            }
-          ],
-          "requestBody": {
-            "required": true,
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "content": {
-                      "type": "string",
-                      "description": "Content to use for generating the title"
-                    }
-                  },
-                  "required": ["content"]
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Title generated and updated successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "description": "Conversation ID"
-                          },
-                          "title": {
-                            "type": "string",
-                            "description": "Generated title"
-                          },
-                          "lastModified": {
-                            "type": "integer",
-                            "format": "int64",
-                            "description": "Timestamp when the title was updated"
-                          }
-                        },
-                        "required": ["id", "title", "lastModified"]
-                      },
-                      "error": {
-                        "type": "null"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "400": {
-              "description": "Bad request",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/Error"
-                  }
-                }
-              }
-            },
-            "401": {
-              "description": "Unauthorized",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/Error"
-                  }
-                }
-              }
-            },
-            "404": {
-              "description": "Conversation not found",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/Error"
-                  }
-                }
-              }
-            },
-            "500": {
-              "description": "Server error",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/Error"
-                  }
                 }
               }
             }
@@ -493,8 +530,8 @@
         }
       ],
       "get": {
-        "summary": "Get all messages in a conversation",
-        "description": "Retrieve all messages for a specific conversation",
+        "summary": "Get conversation messages",
+        "description": "Get all messages for a conversation",
         "security": [
           {
             "bearerAuth": []
@@ -546,7 +583,7 @@
       },
       "post": {
         "summary": "Create a message",
-        "description": "Create a new message in a conversation. The message will be automatically marked as from the user (isFromUser: true). The endpoint will also return the AI's response message.",
+        "description": "Create a new message and get AI response",
         "security": [
           {
             "bearerAuth": []
@@ -561,7 +598,7 @@
                 "properties": {
                   "content": {
                     "type": "string",
-                    "description": "Message content"
+                    "description": "Content of the message"
                   }
                 },
                 "required": ["content"]
@@ -578,16 +615,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "$ref": "#/components/schemas/Message"
-                        },
-                        "response": {
-                          "$ref": "#/components/schemas/Message"
-                        }
-                      },
-                      "required": ["message", "response"]
+                      "$ref": "#/components/schemas/MessageResponse"
                     },
                     "error": {
                       "type": "null"
@@ -668,7 +696,7 @@
                 "properties": {
                   "content": {
                     "type": "string",
-                    "description": "New message content"
+                    "description": "New content for the message"
                   }
                 },
                 "required": ["content"]
@@ -715,16 +743,6 @@
               }
             }
           },
-          "404": {
-            "description": "Message not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Server error",
             "content": {
@@ -754,7 +772,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "null"
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      }
                     },
                     "error": {
                       "type": "null"
@@ -766,16 +789,6 @@
           },
           "401": {
             "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Message not found",
             "content": {
               "application/json": {
                 "schema": {
