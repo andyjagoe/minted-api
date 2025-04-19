@@ -134,7 +134,7 @@ async function updateConversationTitle(
       ':createdAt': 'createdAt',
       ':lastModifiedValue': 'lastModified',
     },
-    ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND createdAt = lastModified',
+    ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND :createdAt = :lastModifiedValue',
   });
 
   return {
