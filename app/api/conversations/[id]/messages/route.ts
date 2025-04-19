@@ -130,11 +130,9 @@ async function updateConversationTitle(
     UpdateExpression: 'SET title = :title, lastModified = :lastModified',
     ExpressionAttributeValues: {
       ':title': res.content,
-      ':lastModified': now,
-      ':createdAt': 'createdAt',
-      ':lastModifiedValue': 'lastModified',
+      ':lastModified': now
     },
-    ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND :createdAt = :lastModifiedValue',
+    ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)',
   });
 
   return {
