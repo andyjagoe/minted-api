@@ -65,16 +65,9 @@ async function createMessage(
   userId: string,
   conversationId: string,
   content: string,
-  isFromUser: boolean
+  isFromUser: boolean,
+  tableName: string
 ) {
-  const tableName = process.env.DYNAMODB_TABLE_NAME;
-  if (!tableName) {
-    return NextResponse.json(
-      { data: null, error: 'Table name not configured' },
-      { status: 500 }
-    );
-  }
-
   const messageId = uuidv7();
   const now = Date.now();
 
@@ -111,6 +104,46 @@ async function createMessage(
   };
 }
 
+async function updateConversationTitle(
+  userId: string,
+  conversationId: string,
+  content: string,
+  tableName: string
+) {
+  const now = Date.now();
+  
+  const llm = new LLMService();
+  const req: LLMRequest = {
+    messages: [
+      LLMService.createMessage(`summarize the following message in 5 words or less: ${content}`, 'user')
+    ]
+  };
+  const res = await llm.ask(req);
+  console.log('Response:', res.content);
+
+  await dynamoDB.update({
+    TableName: tableName,
+    Key: {
+      pk: `USER#${userId}`,
+      sk: `CHAT#${conversationId}`,
+    },
+    UpdateExpression: 'SET title = :title, lastModified = :lastModified',
+    ExpressionAttributeValues: {
+      ':title': res.content,
+      ':lastModified': now,
+      ':createdAt': 'createdAt',
+      ':lastModifiedValue': 'lastModified',
+    },
+    ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND createdAt = lastModified',
+  });
+
+  return {
+    id: conversationId,
+    title: res.content,
+    lastModified: now,
+  };
+}
+
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -136,7 +169,14 @@ export async function POST(
     const validatedData = messageSchema.parse(body);
     const { content } = validatedData;
 
-    const message = await createMessage(user.id, conversationId, content, true);
+    const tableName = process.env.DYNAMODB_TABLE_NAME;
+    if (!tableName) {
+      return NextResponse.json(
+        { data: null, error: 'Table name not configured' },
+        { status: 500 }
+      );
+    }  
+    const message = await createMessage(user.id, conversationId, content, true, tableName);
 
     const llm = new LLMService();
     const req: LLMRequest = {
@@ -145,9 +185,10 @@ export async function POST(
       ]
     };
     const res = await llm.ask(req);
-    console.log('Response:', res.content);
 
-    const response = await createMessage(user.id, conversationId, res.content, false);
+    const response = await createMessage(user.id, conversationId, res.content, false, tableName);
+
+    await updateConversationTitle(user.id, conversationId, content, tableName);
 
     return NextResponse.json(
       { data: { message, response }, 
