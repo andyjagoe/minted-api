@@ -1,28 +1,11 @@
 import Link from "next/link"
-import { ArrowRight, Bot, Code, Shield, Database, MessageSquare, BookOpen } from "lucide-react"
+import { ArrowRight, Bot, Code, Shield, Database, MessageSquare } from "lucide-react"
+import { Header } from "@/components/header"
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-16 items-center">
-          <div className="flex items-center gap-2 font-bold">
-            <Bot className="h-5 w-5" />
-            <span>Minted AI API</span>
-          </div>
-          <nav className="ml-auto flex gap-4">
-            <Link
-              href="https://github.com/yourusername/minted-api"
-              className="text-sm font-medium hover:underline"
-            >
-              GitHub
-            </Link>
-            <Link href="/api-docs" className="text-sm font-medium hover:underline">
-              API Docs
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Header />
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">

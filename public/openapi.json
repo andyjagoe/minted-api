@@ -3,7 +3,7 @@
   "info": {
     "title": "Minted AI API",
     "version": "1.0.0",
-    "description": "API documentation for Minted AI application"
+    "description": "API documentation for Minted AI aplication. Sign in to test interactively."
   },
   "servers": [
     {
