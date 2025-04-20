@@ -24,10 +24,10 @@ export default function APIDocs() {
           />
         </div>
       </main>
-      <footer className="w-full border-t py-6">
-        <div className="container flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
-          <p className="text-center text-sm leading-loose text-muted-foreground">
-            © 2024 Minted AI API. All rights reserved.
+      <footer className="w-full border-t py-4 md:py-6">
+        <div className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8 px-4 md:px-6">
+          <p className="text-center text-xs md:text-sm leading-loose text-muted-foreground">
+            © 2025 Minted AI API. All rights reserved.
           </p>
         </div>
       </footer>
