@@ -33,18 +33,29 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, AIMessage, MessageContent, BaseMessage } from '@langchain/core/messages';
+import { HumanMessage, AIMessage, BaseMessage } from '@langchain/core/messages';
 import { StateGraph, START, END, CompiledStateGraph } from '@langchain/langgraph';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { IterableReadableStream } from '@langchain/core/utils/stream';
 import { LLMRequest, LLMResponse, LLMConfig, LLMStreamResponse } from '@/lib/types/llm.types';
+import { DynamoDBCheckpointSaver } from './checkpoint.service';
+import { v7 as uuidv7 } from 'uuid';
+import { dynamoDB } from '@/lib/utils/dynamodb';
+
+/**
+ * Represents a message reference in the checkpoint state
+ */
+interface MessageReference {
+  messageId: string;
+  isFromUser: boolean;
+}
 
 /**
  * Represents the state of the LangGraph during execution
  */
 interface GraphState {
-  /** Array of messages in the conversation */
-  messages: Array<HumanMessage | AIMessage>;
+  /** Array of message references */
+  messageRefs: MessageReference[];
   /** Current chunk of the response being streamed */
   responseChunk?: string;
   /** Whether the current request is streaming */
@@ -56,14 +67,10 @@ interface GraphState {
  * @param content - The message content to extract text from
  * @returns The extracted text content
  */
-function getMessageContent(content: MessageContent | undefined): string {
-  if (!content) return '';
-  if (typeof content === 'string') {
-    return content;
-  }
-  return content
-    .map(item => (item && typeof item === 'object' && 'text' in item ? item.text : ''))
-    .join('');
+function getMessageContent(content: any): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) return content.map(c => getMessageContent(c)).join('');
+  return '';
 }
 
 /**
@@ -77,6 +84,7 @@ export class LLMService {
   private graphDefinition: StateGraph<GraphState>;
   private compiledGraph: CompiledStateGraph<GraphState, GraphState> | null = null;
   private config: LLMConfig;
+  private checkpointSaver: DynamoDBCheckpointSaver;
 
   /**
    * Creates a new instance of LLMService
@@ -99,6 +107,7 @@ export class LLMService {
       maxTokens: this.config.maxTokens,
       streaming: true,
     });
+    this.checkpointSaver = new DynamoDBCheckpointSaver(process.env.DYNAMODB_TABLE_NAME as string);
 
     // Initialize the LangGraph *definition*
     this.graphDefinition = this.buildGraphDefinition();
@@ -132,8 +141,13 @@ export class LLMService {
   private buildGraphDefinition(): StateGraph<GraphState> {
     const graph = new StateGraph<GraphState>({
       channels: {
-        messages: {
-          value: (x: BaseMessage[], y: BaseMessage[]) => x.concat(y),
+        messageRefs: {
+          value: (x: MessageReference[], y: MessageReference[]) => {
+            // Only add new message references that don't already exist
+            const existingIds = new Set(x.map(ref => ref.messageId));
+            const newRefs = y.filter(ref => !existingIds.has(ref.messageId));
+            return [...x, ...newRefs];
+          },
           default: () => [],
         },
         responseChunk: {
@@ -158,7 +172,7 @@ export class LLMService {
     // Node to invoke the LLM
     graph.addNode('invokeLLM', async (state: GraphState, config?: RunnableConfig): Promise<Partial<GraphState>> => {
       console.log(`Invoking LLM (Streaming: ${state.isStreaming})...`);
-      const currentMessages = state.messages;
+      const currentMessages = await this.loadMessagesFromRefs(state.messageRefs);
 
       if (state.isStreaming) {
         const stream = await this.model.stream(currentMessages, config);
@@ -172,20 +186,96 @@ export class LLMService {
           finalMessage = new AIMessage({ content: accumulatedContent });
         }
         return {
-          messages: finalMessage ? [finalMessage] : [],
+          messageRefs: finalMessage ? [...state.messageRefs, { messageId: uuidv7(), isFromUser: false }] : state.messageRefs,
           responseChunk: undefined,
         };
       } else {
+        console.log('Current messages:', currentMessages);
         const response = await this.model.invoke(currentMessages, config);
+        console.log('LLM raw response:', response);
+        
         const responseContent = getMessageContent(response.content);
+        console.log('Processed response content:', responseContent);
+        
+        if (!responseContent) {
+          throw new Error('Empty response from LLM');
+        }
+
+        // Create a new message reference for the assistant's response
+        const assistantMessageId = uuidv7();
+        
+        // Get userId and conversationId from the request
+        const userId = config?.configurable?.userId;
+        const conversationId = config?.configurable?.conversationId;
+
+        if (!userId || !conversationId) {
+          throw new Error('Missing userId or conversationId in request');
+        }
+        
+        // Store the assistant's message in DynamoDB
+        await dynamoDB.put({
+          TableName: process.env.DYNAMODB_TABLE_NAME as string,
+          Item: {
+            pk: `MSG#${assistantMessageId}`,
+            sk: `MSG#${assistantMessageId}`,
+            content: responseContent,
+            isFromUser: false,
+            conversationId,
+            createdAt: Date.now(),
+            lastModified: Date.now(),
+            GSI1PK: `USER#${userId}#CHAT#${conversationId}`,
+            GSI1SK: Date.now(),
+            type: 'MSG'
+          }
+        });
+
+        // Only add the new message reference if it doesn't already exist
+        const existingIds = new Set(state.messageRefs.map(ref => ref.messageId));
+        const newMessageRefs = existingIds.has(assistantMessageId) 
+          ? state.messageRefs 
+          : [...state.messageRefs, { messageId: assistantMessageId, isFromUser: false }];
+
         return {
-          messages: [new AIMessage({ content: responseContent })],
+          messageRefs: newMessageRefs,
           responseChunk: responseContent,
         };
       }
     });
 
     return graph;
+  }
+
+  private async loadMessagesFromRefs(refs: MessageReference[]): Promise<BaseMessage[]> {
+    const messages: BaseMessage[] = [];
+    for (const ref of refs) {
+      const message = await this.loadMessage(ref.messageId);
+      if (message) {
+        messages.push(message);
+      }
+    }
+    return messages;
+  }
+
+  private async loadMessage(messageId: string): Promise<BaseMessage | null> {
+    try {
+      const result = await dynamoDB.get({
+        TableName: process.env.DYNAMODB_TABLE_NAME as string,
+        Key: {
+          pk: `MSG#${messageId}`,
+          sk: `MSG#${messageId}`
+        },
+      });
+
+      if (!result.Item) return null;
+
+      const { content, isFromUser } = result.Item;
+      return isFromUser 
+        ? new HumanMessage(content)
+        : new AIMessage(content);
+    } catch (error) {
+      console.error('Error loading message:', error);
+      return null;
+    }
   }
 
   /**
@@ -203,16 +293,64 @@ export class LLMService {
    */
   async ask(request: LLMRequest): Promise<LLMResponse> {
     const graph = this.compileGraph();
+    const checkpoint = await this.checkpointSaver.getTuple(request.userId, request.conversationId, 'latest');
+    
+    // Create a new message reference for the user's message
+    const userMessageId = uuidv7();
+    
+    // Store the user's message in DynamoDB
+    await dynamoDB.put({
+      TableName: process.env.DYNAMODB_TABLE_NAME as string,
+      Item: {
+        pk: `MSG#${userMessageId}`,
+        sk: `MSG#${userMessageId}`,
+        content: request.messages[0].content,
+        isFromUser: true,
+        conversationId: request.conversationId,
+        createdAt: Date.now(),
+        lastModified: Date.now(),
+        GSI1PK: `USER#${request.userId}#CHAT#${request.conversationId}`,
+        GSI1SK: Date.now(),
+        type: 'MSG'
+      }
+    });
 
+    // Initialize state with existing messages and the new user message
     const initialState: GraphState = {
-      messages: request.messages as Array<HumanMessage | AIMessage>,
+      messageRefs: [
+        ...((checkpoint?.[0]?.messageRefs || []) as MessageReference[]),
+        { messageId: userMessageId, isFromUser: true }
+      ],
       isStreaming: false,
     };
 
-    const finalState = await graph.invoke(initialState);
+    const finalState = await graph.invoke(initialState, {
+      configurable: {
+        userId: request.userId,
+        conversationId: request.conversationId
+      }
+    });
 
-    const lastMessage = finalState.messages[finalState.messages.length - 1];
-    const responseContent = getMessageContent(lastMessage?.content);
+    await this.checkpointSaver.putTuple(
+      request.userId,
+      request.conversationId,
+      'latest',
+      { messageRefs: finalState.messageRefs },
+      { source: 'input', step: 1, writes: null, parents: {} }
+    );
+
+    // Get the last message (which should be the assistant's response)
+    const lastMessageRef = finalState.messageRefs[finalState.messageRefs.length - 1];
+    const lastMessage = await this.loadMessage(lastMessageRef.messageId);
+    
+    if (!lastMessage) {
+      throw new Error('Failed to load assistant response');
+    }
+
+    const responseContent = getMessageContent(lastMessage.content);
+    if (!responseContent) {
+      throw new Error('Empty response from assistant');
+    }
 
     return {
       content: responseContent,
@@ -238,14 +376,13 @@ export class LLMService {
    */
   async *askStream(request: LLMRequest): AsyncGenerator<LLMStreamResponse> {
     const graph = this.compileGraph();
-    const threadId = Math.random().toString(36).substring(7);
-
+    const checkpoint = await this.checkpointSaver.getTuple(request.userId, request.conversationId, 'latest');
     const initialState: GraphState = {
-      messages: request.messages as Array<HumanMessage | AIMessage>,
+      messageRefs: (checkpoint?.[0]?.messageRefs || []) as MessageReference[],
       isStreaming: true,
     };
 
-    const stream = graph.stream(initialState, { configurable: { thread_id: threadId } }) as any as AsyncIterable<Record<string, any>>;
+    const stream = graph.stream(initialState, { configurable: { thread_id: request.userId } }) as any as AsyncIterable<Record<string, any>>;
 
     let yieldedContent = false;
     for await (const step of stream) {

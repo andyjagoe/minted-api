@@ -15,6 +15,8 @@ export interface LLMConfig {
 export interface LLMRequest {
   messages: BaseMessage[];
   config?: LLMConfig;
+  userId: string;
+  conversationId: string;
 }
 
 export interface LLMStreamResponse {

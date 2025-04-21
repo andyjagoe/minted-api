@@ -6,6 +6,31 @@ import { v7 as uuidv7 } from 'uuid';
 import { ZodError } from 'zod';
 import { LLMService } from '@/lib/services/llm.service';
 import { LLMRequest } from '@/lib/types/llm.types';
+import { DynamoDBCheckpointSaver } from '@/lib/services/checkpoint.service';
+
+interface MessageReference {
+  messageId: string;
+  isFromUser: boolean;
+}
+
+interface DynamoDBMessage {
+  pk: string;
+  sk: string;
+  content: string;
+  isFromUser: boolean;
+  conversationId: string;
+  createdAt: number;
+  lastModified: number;
+}
+
+interface TransformedMessage {
+  id: string;
+  content: string;
+  isFromUser: boolean;
+  conversationId: string;
+  createdAt: number;
+  lastModified: number;
+}
 
 export async function GET(
   request: Request,
@@ -29,27 +54,37 @@ export async function GET(
       );
     }
 
-    const result = await dynamoDB.query({
-      TableName: tableName,
-      IndexName: 'GSI1',
-      KeyConditionExpression: 'GSI1PK = :GSI1PK',
-      ExpressionAttributeValues: {
-        ':GSI1PK': `USER#${user.id}#CHAT#${conversationId}`,
-      },
-      ScanIndexForward: true,
-    });
+    const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
+    const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
+    const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
 
-    const messages = result.Items?.map(item => ({
-      id: item.sk.split('#')[1],
-      content: item.content,
-      isFromUser: item.isFromUser,
-      conversationId: item.conversationId,
-      createdAt: item.createdAt,
-      lastModified: item.lastModified,
-    })) || [];
+    const messages = await Promise.all(
+      messageRefs.map(async (ref: MessageReference) => {
+        const result = await dynamoDB.get({
+          TableName: tableName,
+          Key: {
+            pk: `MSG#${ref.messageId}`,
+            sk: `MSG#${ref.messageId}`
+          },
+        });
+        return result.Item as DynamoDBMessage | undefined;
+      })
+    );
+
+    // Transform messages to match the desired format
+    const transformedMessages = messages
+      .filter((msg): msg is DynamoDBMessage => msg !== undefined)
+      .map(msg => ({
+        id: msg.pk.replace('MSG#', ''),
+        content: msg.content,
+        isFromUser: msg.isFromUser,
+        conversationId: msg.conversationId,
+        createdAt: msg.createdAt,
+        lastModified: msg.lastModified
+      }));
 
     return NextResponse.json(
-      { data: messages, error: null },
+      { data: transformedMessages, error: null },
       { status: 200 }
     );
   } catch (error) {
@@ -72,11 +107,11 @@ async function createMessage(
   const now = Date.now();
 
   const item = {
-    pk: `USER#${userId}`,
+    pk: `MSG#${messageId}`,
     sk: `MSG#${messageId}`,
     type: 'MSG',
     content,
-    isFromUser: isFromUser,
+    isFromUser,
     conversationId,
     createdAt: now,
     lastModified: now,
@@ -87,17 +122,12 @@ async function createMessage(
   await dynamoDB.put({
     TableName: tableName,
     Item: item,
-    ConditionExpression: 'pk <> :pkVal AND sk <> :skVal',
-    ExpressionAttributeValues: {
-      ':pkVal': `USER#${userId}`,
-      ':skVal': `MSG#${messageId}`,
-    },
   });
 
   return {
     id: messageId,
     content,
-    isFromUser: isFromUser,
+    isFromUser,
     conversationId,
     createdAt: now,
     lastModified: now,
@@ -117,7 +147,7 @@ export async function POST(
       );
     }
 
-    const conversationId = await params.id;
+    const { id: conversationId } = await params;
     if (!conversationId) {
       return NextResponse.json(
         { data: null, error: 'Conversation ID is required' },
@@ -135,22 +165,71 @@ export async function POST(
         { data: null, error: 'Table name not configured' },
         { status: 500 }
       );
-    }  
-    const message = await createMessage(user.id, conversationId, content, true, tableName);
+    }
 
+    // Get LLM response
     const llm = new LLMService();
     const req: LLMRequest = {
-      messages: [
-        LLMService.createMessage(content, 'user')
-      ]
+      messages: [LLMService.createMessage(content, 'user')],
+      userId: user.id,
+      conversationId
     };
+    
+    console.log('Getting LLM response...');
     const res = await llm.ask(req);
+    console.log('LLM response:', res);
 
-    const response = await createMessage(user.id, conversationId, res.content, false, tableName);
+    if (!res) {
+      throw new Error('No response received from LLM');
+    }
+
+    if (!res.content || res.content.trim() === '') {
+      console.error('Empty LLM response:', res);
+      throw new Error('Empty response received from LLM');
+    }
+
+    // Get the latest checkpoint to get both messages
+    const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
+    const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
+    const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
+
+    // Load both messages from DynamoDB
+    const messages = await Promise.all(
+      messageRefs.map(async (ref: MessageReference) => {
+        const result = await dynamoDB.get({
+          TableName: tableName,
+          Key: {
+            pk: `MSG#${ref.messageId}`,
+            sk: `MSG#${ref.messageId}`
+          },
+        });
+        return result.Item as DynamoDBMessage | undefined;
+      })
+    );
+
+    // Transform messages to match the desired format
+    const transformedMessages = messages
+      .filter((msg): msg is DynamoDBMessage => msg !== undefined)
+      .map(msg => ({
+        id: msg.pk.replace('MSG#', ''),
+        content: msg.content,
+        isFromUser: msg.isFromUser,
+        conversationId: msg.conversationId,
+        createdAt: msg.createdAt,
+        lastModified: msg.lastModified
+      }));
+
+    // Get the last two messages (user message and assistant response)
+    const [message, response] = transformedMessages.slice(-2);
 
     return NextResponse.json(
-      { data: { message, response }, 
-        error: null },
+      { 
+        data: { 
+          message,
+          response
+        }, 
+        error: null 
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -164,7 +243,7 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { data: null, error: 'Failed to create message' },
+      { data: null, error: error instanceof Error ? error.message : 'Failed to create message' },
       { status: 500 }
     );
   }

@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
 import { LLMService } from '@/lib/services/llm.service';
-import { LLMRequest } from '@/lib/types/llm.types';
-import { ZodError } from 'zod';
+import { DynamoDBCheckpointSaver } from '@/lib/services/checkpoint.service';
+
+interface MessageReference {
+  messageId: string;
+  isFromUser: boolean;
+}
 
 export async function POST(
   request: Request,
@@ -18,7 +22,7 @@ export async function POST(
       );
     }
 
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
     if (!conversationId) {
       return NextResponse.json(
         { data: null, error: 'Conversation ID is required' },
@@ -34,68 +38,69 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { content } = body;
+    // Get latest checkpoint to load messages
+    const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
+    const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
+    const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
 
-    if (!content || typeof content !== 'string') {
+    if (messageRefs.length === 0) {
       return NextResponse.json(
-        { data: null, error: 'Content is required and must be a string' },
+        { data: null, error: 'No messages found in conversation' },
         { status: 400 }
       );
     }
 
-    // Generate title using AI
+    // Load the first message to generate title
+    const firstMessageRef = messageRefs[0];
+    const result = await dynamoDB.get({
+      TableName: tableName,
+      Key: {
+        pk: `MSG#${firstMessageRef.messageId}`,
+        sk: `MSG#${firstMessageRef.messageId}`
+      },
+    });
+
+    if (!result.Item) {
+      return NextResponse.json(
+        { data: null, error: 'Failed to load first message' },
+        { status: 500 }
+      );
+    }
+
+    /*
     const llm = new LLMService();
-    const req: LLMRequest = {
-      messages: [
-        LLMService.createMessage(
-          `Generate a concise, descriptive title (4 words or less) for a conversation that contains this content: "${content}"`,
-          'user'
-        )
-      ]
+    const req = {
+      messages: [LLMService.createMessage(result.Item.content, 'user')],
+      userId: user.id,
+      conversationId
     };
     const res = await llm.ask(req);
-    const title = res.content.trim();
+    */
 
-    // Update conversation with new title
-    const now = Date.now();
+    // Update conversation title
     await dynamoDB.update({
       TableName: tableName,
       Key: {
         pk: `USER#${user.id}`,
-        sk: `CHAT#${conversationId}`,
+        sk: `CHAT#${conversationId}`
       },
-      UpdateExpression: 'SET title = :title, lastModified = :lastModified',
+      UpdateExpression: 'SET title = :title, lastModified = :now',
       ExpressionAttributeValues: {
-        ':title': title,
-        ':lastModified': now,
-      },
-      ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)',
+        //':title': res.content,
+        ':title': result.Item.content,
+        ':now': Date.now()
+      }
     });
 
     return NextResponse.json(
-      { 
-        data: {
-          id: conversationId,
-          title,
-          lastModified: now,
-        },
-        error: null 
-      },
+      //{ data: { title: res.content }, error: null },
+      { data: { title: result.Item.content }, error: null },
       { status: 200 }
     );
   } catch (error) {
     console.error('Error generating conversation title:', error);
-    
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { data: null, error: 'Invalid request body' },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
-      { data: null, error: 'Failed to generate conversation title' },
+      { data: null, error: 'Failed to generate title' },
       { status: 500 }
     );
   }

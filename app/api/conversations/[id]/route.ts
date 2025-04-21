@@ -3,6 +3,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
 import { conversationSchema } from '@/lib/types/conversation.types';
 import { ZodError } from 'zod';
+import { DynamoDBCheckpointSaver } from '@/lib/services/checkpoint.service';
 
 export async function PUT(
   request: Request,
@@ -125,6 +126,16 @@ export async function DELETE(
       Key: {
         pk: `USER#${user.id}`,
         sk: `CHAT#${id}`,
+      },
+    });
+
+    // Delete the checkpoint
+    const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
+    await dynamoDB.delete({
+      TableName: tableName,
+      Key: {
+        pk: `USER#${user.id}#CHAT#${id}`,
+        sk: 'CHECKPOINT#latest',
       },
     });
 
