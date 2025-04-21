@@ -6,6 +6,7 @@ specifiers:
   '@clerk/nextjs': ^6.15.1
   '@hookform/resolvers': ^3.9.1
   '@langchain/core': ^0.3.45
+  '@langchain/langgraph': ^0.2.65
   '@langchain/openai': ^0.5.5
   '@radix-ui/react-accordion': ^1.2.2
   '@radix-ui/react-alert-dialog': ^1.1.4
@@ -84,6 +85,7 @@ dependencies:
   '@clerk/nextjs': 6.15.1_42y7y3ilee2ahgbuci2bovllam
   '@hookform/resolvers': 3.10.0_react-hook-form@7.55.0
   '@langchain/core': 0.3.45_openai@4.95.1
+  '@langchain/langgraph': 0.2.65_asz2aylxlj3w2sqxje55x3vow4
   '@langchain/openai': 0.5.5_@langchain+core@0.3.45
   '@radix-ui/react-accordion': 1.2.4_5j5q5giq4a6q5rwe55huzqxn5e
   '@radix-ui/react-alert-dialog': 1.1.7_5j5q5giq4a6q5rwe55huzqxn5e
@@ -1921,6 +1923,54 @@ packages:
       zod-to-json-schema: 3.24.5_zod@3.24.3
     transitivePeerDependencies:
       - openai
+    dev: false
+
+  /@langchain/langgraph-checkpoint/0.0.17_@langchain+core@0.3.45:
+    resolution: {integrity: sha512-6b3CuVVYx+7x0uWLG+7YXz9j2iBa+tn2AXvkLxzEvaAsLE6Sij++8PPbS2BZzC+S/FPJdWsz6I5bsrqL0BYrCA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.2.31 <0.4.0'
+    dependencies:
+      '@langchain/core': 0.3.45_openai@4.95.1
+      uuid: 10.0.0
+    dev: false
+
+  /@langchain/langgraph-sdk/0.0.68_asz2aylxlj3w2sqxje55x3vow4:
+    resolution: {integrity: sha512-8HwUs4Hrr160bydgxnv+tDCYkPiAz7GsywkVmCb0Rb3cVzYu8mMPBhcbY4Wf+90grZp4p4mAYio90r4qJJaKAQ==}
+    peerDependencies:
+      '@langchain/core': '>=0.2.31 <0.4.0'
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@langchain/core':
+        optional: true
+      react:
+        optional: true
+    dependencies:
+      '@langchain/core': 0.3.45_openai@4.95.1
+      '@types/json-schema': 7.0.15
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      react: 19.1.0
+      uuid: 9.0.1
+    dev: false
+
+  /@langchain/langgraph/0.2.65_asz2aylxlj3w2sqxje55x3vow4:
+    resolution: {integrity: sha512-g/Xap2KSEaEBXMJXGZTh31fd0qrdfaWA1l8NJzweJg6AkvVSf+d6DmMk9DtzGW8W1H1qQ2I6FWZ3AdP61Kkaig==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.2.36 <0.3.0 || >=0.3.40 < 0.4.0'
+      zod-to-json-schema: ^3.x
+    peerDependenciesMeta:
+      zod-to-json-schema:
+        optional: true
+    dependencies:
+      '@langchain/core': 0.3.45_openai@4.95.1
+      '@langchain/langgraph-checkpoint': 0.0.17_@langchain+core@0.3.45
+      '@langchain/langgraph-sdk': 0.0.68_asz2aylxlj3w2sqxje55x3vow4
+      uuid: 10.0.0
+      zod: 3.24.3
+    transitivePeerDependencies:
+      - react
     dev: false
 
   /@langchain/openai/0.5.5_@langchain+core@0.3.45:
@@ -4475,7 +4525,6 @@ packages:
 
   /@types/json-schema/7.0.15:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
-    dev: true
 
   /@types/json5/0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
