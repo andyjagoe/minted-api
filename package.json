@@ -21,6 +21,7 @@
     "@hookform/resolvers": "^3.9.1",
     "@langchain/core": "^0.3.45",
     "@langchain/langgraph": "^0.2.65",
+    "@langchain/langgraph-checkpoint": "^0.0.17",
     "@langchain/openai": "^0.5.5",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.4",

@@ -7,6 +7,7 @@ specifiers:
   '@hookform/resolvers': ^3.9.1
   '@langchain/core': ^0.3.45
   '@langchain/langgraph': ^0.2.65
+  '@langchain/langgraph-checkpoint': ^0.0.17
   '@langchain/openai': ^0.5.5
   '@radix-ui/react-accordion': ^1.2.2
   '@radix-ui/react-alert-dialog': ^1.1.4
@@ -86,6 +87,7 @@ dependencies:
   '@hookform/resolvers': 3.10.0_react-hook-form@7.55.0
   '@langchain/core': 0.3.45_openai@4.95.1
   '@langchain/langgraph': 0.2.65_asz2aylxlj3w2sqxje55x3vow4
+  '@langchain/langgraph-checkpoint': 0.0.17_@langchain+core@0.3.45
   '@langchain/openai': 0.5.5_@langchain+core@0.3.45
   '@radix-ui/react-accordion': 1.2.4_5j5q5giq4a6q5rwe55huzqxn5e
   '@radix-ui/react-alert-dialog': 1.1.7_5j5q5giq4a6q5rwe55huzqxn5e
