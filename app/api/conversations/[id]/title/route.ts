@@ -2,12 +2,8 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
 import { LLMService } from '@/lib/services/llm.service';
-import { DynamoDBCheckpointSaver } from '@/lib/services/checkpoint.service';
+import { LLMRequest } from '@/lib/types/llm.types';
 
-interface MessageReference {
-  messageId: string;
-  isFromUser: boolean;
-}
 
 export async function POST(
   request: Request,
@@ -38,44 +34,30 @@ export async function POST(
       );
     }
 
-    // Get latest checkpoint to load messages
-    const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
-    const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
-    const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
+    const body = await request.json();
+    const { content } = body;
 
-    if (messageRefs.length === 0) {
+    if (!content || typeof content !== 'string') {
       return NextResponse.json(
-        { data: null, error: 'No messages found in conversation' },
+        { data: null, error: 'Content is required and must be a string' },
         { status: 400 }
       );
     }
 
-    // Load the first message to generate title
-    const firstMessageRef = messageRefs[0];
-    const result = await dynamoDB.get({
-      TableName: tableName,
-      Key: {
-        pk: `MSG#${firstMessageRef.messageId}`,
-        sk: `MSG#${firstMessageRef.messageId}`
-      },
-    });
-
-    if (!result.Item) {
-      return NextResponse.json(
-        { data: null, error: 'Failed to load first message' },
-        { status: 500 }
-      );
-    }
-
-    /*
+    // Generate title using AI
     const llm = new LLMService();
-    const req = {
-      messages: [LLMService.createMessage(result.Item.content, 'user')],
+    const req: LLMRequest = {
+      messages: [
+        LLMService.createMessage(
+          `Generate a concise, descriptive title (4 words or less) for a conversation that contains this content: "${content}"`,
+          'user'
+        )
+      ],
       userId: user.id,
       conversationId
     };
     const res = await llm.ask(req);
-    */
+    const title = res.content.trim();
 
     // Update conversation title
     await dynamoDB.update({
@@ -86,15 +68,13 @@ export async function POST(
       },
       UpdateExpression: 'SET title = :title, lastModified = :now',
       ExpressionAttributeValues: {
-        //':title': res.content,
-        ':title': result.Item.content,
+        ':title': title,        
         ':now': Date.now()
       }
     });
 
     return NextResponse.json(
-      //{ data: { title: res.content }, error: null },
-      { data: { title: result.Item.content }, error: null },
+      { data: { title: title }, error: null },
       { status: 200 }
     );
   } catch (error) {
