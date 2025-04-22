@@ -417,23 +417,23 @@
       }
     },
     "/conversations/{id}/title": {
-      "parameters": [
-        {
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string"
-          },
-          "description": "Conversation ID"
-        }
-      ],
       "post": {
-        "summary": "Generate conversation title",
-        "description": "Generate a title for a conversation using AI",
+        "summary": "Update conversation title",
+        "description": "Update the title of a specific conversation",
         "security": [
           {
             "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the conversation"
           }
         ],
         "requestBody": {
@@ -445,7 +445,7 @@
                 "properties": {
                   "content": {
                     "type": "string",
-                    "description": "Content to use for generating the title"
+                    "description": "New title for the conversation"
                   }
                 },
                 "required": ["content"]
@@ -455,7 +455,7 @@
         },
         "responses": {
           "200": {
-            "description": "Title generated",
+            "description": "Title updated successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -464,15 +464,8 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string"
-                        },
                         "title": {
                           "type": "string"
-                        },
-                        "lastModified": {
-                          "type": "integer",
-                          "format": "int64"
                         }
                       }
                     },
@@ -527,11 +520,32 @@
             "type": "string"
           },
           "description": "Conversation ID"
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 100
+          },
+          "description": "Maximum number of messages to return"
+        },
+        {
+          "name": "lastEvaluatedKey",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Token for pagination"
         }
       ],
       "get": {
         "summary": "Get conversation messages",
-        "description": "Get all messages for a conversation",
+        "description": "Get all messages for a conversation with pagination",
         "security": [
           {
             "bearerAuth": []
@@ -539,7 +553,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of messages",
+            "description": "List of messages with pagination info",
             "content": {
               "application/json": {
                 "schema": {
@@ -553,6 +567,25 @@
                     },
                     "error": {
                       "type": "null"
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "hasMore": {
+                          "type": "boolean",
+                          "description": "Whether there are more messages to fetch"
+                        },
+                        "lastEvaluatedKey": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Token for the next page of results"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "description": "Number of messages returned in this request"
+                        }
+                      },
+                      "required": ["hasMore", "lastEvaluatedKey", "limit"]
                     }
                   }
                 }
@@ -615,7 +648,16 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/MessageResponse"
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "$ref": "#/components/schemas/Message"
+                        },
+                        "response": {
+                          "$ref": "#/components/schemas/Message"
+                        }
+                      },
+                      "required": ["message", "response"]
                     },
                     "error": {
                       "type": "null"

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Bot, Code, Shield, Database, MessageSquare } from "lucide-react"
+import { ArrowRight, Bot, Code, Shield, Database, MessageSquare, List, RefreshCw, Brain } from "lucide-react"
 import { Header } from "@/components/header"
 
 export default function Home() {
@@ -38,15 +38,9 @@ export default function Home() {
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
-                      <Code className="h-4 w-4 text-primary" />
+                      <Brain className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="text-sm md:text-base">Type-safe API with TypeScript</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="rounded-full bg-primary/10 p-1">
-                      <MessageSquare className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-sm md:text-base">Nested resources for conversations</span>
+                    <span className="text-sm md:text-base">Conversation memory and message history</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="rounded-full bg-primary/10 p-1">
@@ -59,6 +53,18 @@ export default function Home() {
                       <Database className="h-4 w-4 text-primary" />
                     </div>
                     <span className="text-sm md:text-base">DynamoDB for scalable storage</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="rounded-full bg-primary/10 p-1">
+                      <RefreshCw className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm md:text-base">Pagination support for messages</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="rounded-full bg-primary/10 p-1">
+                      <Code className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm md:text-base">Type-safe API with TypeScript</span>
                   </li>
                 </ul>
               </div>
@@ -87,6 +93,10 @@ export default function Home() {
                         <code className="rounded bg-muted px-2 py-1 text-xs md:text-sm min-w-[150px] md:min-w-[200px]">DELETE /api/conversations/:id</code>
                         <span className="text-xs md:text-sm text-muted-foreground">Delete conversation</span>
                       </li>
+                      <li className="flex items-center gap-2 whitespace-nowrap">
+                        <code className="rounded bg-muted px-2 py-1 text-xs md:text-sm min-w-[150px] md:min-w-[200px]">POST /api/conversations/:id/title</code>
+                        <span className="text-xs md:text-sm text-muted-foreground">Update title</span>
+                      </li>
                     </ul>
                   </div>
                   <div>
@@ -97,11 +107,11 @@ export default function Home() {
                     <ul className="mt-2 grid gap-2">
                       <li className="flex flex-col gap-1">
                         <code className="rounded bg-muted px-2 py-1 text-xs md:text-sm">GET /api/conversations/:id/messages</code>
-                        <span className="text-xs md:text-sm text-muted-foreground">List messages</span>
+                        <span className="text-xs md:text-sm text-muted-foreground">List messages (with pagination)</span>
                       </li>
                       <li className="flex flex-col gap-1">
                         <code className="rounded bg-muted px-2 py-1 text-xs md:text-sm">POST /api/conversations/:id/messages</code>
-                        <span className="text-xs md:text-sm text-muted-foreground">Send message and get AI response</span>
+                        <span className="text-xs md:text-sm text-muted-foreground">Send message and get AI response (with conversation history)</span>
                       </li>
                       <li className="flex flex-col gap-1">
                         <code className="rounded bg-muted px-2 py-1 text-xs md:text-sm">PUT /api/conversations/:id/messages/:messageId</code>

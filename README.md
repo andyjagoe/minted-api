@@ -11,6 +11,10 @@ A modern REST API for AI-powered conversations, built with Next.js 14 and TypeSc
 - 🗄️ DynamoDB for scalable storage
 - 📚 OpenAPI documentation
 - 🧪 Comprehensive test coverage
+- 🔄 Pagination support for messages
+- 🔍 Real-time message updates
+- 🎯 Conversation title management
+- 🧠 Message history and conversation memory
 
 ## Tech Stack
 
@@ -22,6 +26,7 @@ A modern REST API for AI-powered conversations, built with Next.js 14 and TypeSc
 - **Validation**: Zod
 - **Testing**: Vitest
 - **Documentation**: OpenAPI/Swagger
+- **Package Manager**: pnpm
 
 ## Getting Started
 
@@ -76,11 +81,12 @@ The API documentation is available at `/api-docs` when running the application l
 - `POST /api/conversations` - Create a new conversation
 - `PUT /api/conversations/:id` - Update a conversation
 - `DELETE /api/conversations/:id` - Delete a conversation and its messages
+- `POST /api/conversations/:id/title` - Update conversation title
 
 #### Messages
 
-- `GET /api/conversations/:id/messages` - List all messages in a conversation
-- `POST /api/conversations/:id/messages` - Create a new message and get AI response
+- `GET /api/conversations/:id/messages` - List messages in a conversation (with pagination)
+- `POST /api/conversations/:id/messages` - Create a new message and get AI response (with conversation history)
 - `PUT /api/conversations/:id/messages/:messageId` - Update a message's content
 - `DELETE /api/conversations/:id/messages/:messageId` - Delete a message
 
@@ -94,6 +100,21 @@ All API responses follow this format:
 }
 ```
 
+#### Pagination Response
+For paginated endpoints (e.g., messages):
+```typescript
+{
+  data: T[];
+  error: null;
+  pagination: {
+    hasMore: boolean;
+    lastEvaluatedKey: string | null;
+    limit: number;
+  }
+}
+```
+
+#### Message Creation Response
 For message creation, the response includes both the user message and AI response:
 ```typescript
 {
@@ -135,3 +156,15 @@ The API uses standard HTTP status codes:
 - 401: Unauthorized
 - 404: Not Found
 - 500: Internal Server Error
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
