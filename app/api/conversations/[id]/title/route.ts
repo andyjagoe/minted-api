@@ -45,6 +45,7 @@ export async function POST(
     }
 
     // Generate title using AI
+    /*
     const llm = new LLMService();
     const req: LLMRequest = {
       messages: [
@@ -58,6 +59,7 @@ export async function POST(
     };
     const res = await llm.ask(req);
     const title = res.content.trim();
+    */
 
     // Update conversation title
     await dynamoDB.update({
@@ -68,13 +70,13 @@ export async function POST(
       },
       UpdateExpression: 'SET title = :title, lastModified = :now',
       ExpressionAttributeValues: {
-        ':title': title,        
+        ':title': content,        
         ':now': Date.now()
       }
     });
 
     return NextResponse.json(
-      { data: { title: title }, error: null },
+      { data: { title: content }, error: null },
       { status: 200 }
     );
   } catch (error) {
