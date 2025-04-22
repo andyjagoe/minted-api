@@ -23,15 +23,6 @@ interface DynamoDBMessage {
   lastModified: number;
 }
 
-interface TransformedMessage {
-  id: string;
-  content: string;
-  isFromUser: boolean;
-  conversationId: string;
-  createdAt: number;
-  lastModified: number;
-}
-
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -54,26 +45,38 @@ export async function GET(
       );
     }
 
+    // Get pagination parameters from query
+    const url = new URL(request.url);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '100'), 100);
+    const lastEvaluatedKey = url.searchParams.get('lastEvaluatedKey');
+
+    // Get the latest checkpoint to get message IDs
     const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
     const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
     const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
 
-    const messages = await Promise.all(
-      messageRefs.map(async (ref: MessageReference) => {
-        const result = await dynamoDB.get({
-          TableName: tableName,
-          Key: {
-            pk: `MSG#${ref.messageId}`,
-            sk: `MSG#${ref.messageId}`
-          },
-        });
-        return result.Item as DynamoDBMessage | undefined;
-      })
-    );
+    if (messageRefs.length === 0) {
+      return NextResponse.json(
+        { data: [], error: null },
+        { status: 200 }
+      );
+    }
+
+    // Query messages using GSI1
+    const result = await dynamoDB.query({
+      TableName: tableName,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': `USER#${user.id}#CHAT#${conversationId}`
+      },
+      ScanIndexForward: true, // Sort by GSI1SK in descending order (newest first)
+      Limit: limit,
+      ExclusiveStartKey: lastEvaluatedKey ? JSON.parse(decodeURIComponent(lastEvaluatedKey)) : undefined
+    });
 
     // Transform messages to match the desired format
-    const transformedMessages = messages
-      .filter((msg): msg is DynamoDBMessage => msg !== undefined)
+    const messages = (result.Items || [])
       .map(msg => ({
         id: msg.pk.replace('MSG#', ''),
         content: msg.content,
@@ -84,7 +87,17 @@ export async function GET(
       }));
 
     return NextResponse.json(
-      { data: transformedMessages, error: null },
+      { 
+        data: messages, 
+        error: null,
+        pagination: {
+          hasMore: !!result.LastEvaluatedKey,
+          lastEvaluatedKey: result.LastEvaluatedKey 
+            ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey))
+            : null,
+          limit
+        }
+      },
       { status: 200 }
     );
   } catch (error) {
@@ -147,7 +160,7 @@ export async function POST(
       );
     }
 
-    const { id: conversationId } = await params;
+    const { id: conversationId } = params;
     if (!conversationId) {
       return NextResponse.json(
         { data: null, error: 'Conversation ID is required' },
@@ -193,9 +206,12 @@ export async function POST(
     const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
     const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
 
-    // Load both messages from DynamoDB
+    // Only load the last two messages (user message and assistant response)
+    const lastTwoRefs = messageRefs.slice(-2);
+
+    // Load only the last two messages from DynamoDB
     const messages = await Promise.all(
-      messageRefs.map(async (ref: MessageReference) => {
+      lastTwoRefs.map(async (ref: MessageReference) => {
         const result = await dynamoDB.get({
           TableName: tableName,
           Key: {
@@ -220,7 +236,7 @@ export async function POST(
       }));
 
     // Get the last two messages (user message and assistant response)
-    const [message, response] = transformedMessages.slice(-2);
+    const [message, response] = transformedMessages;
 
     return NextResponse.json(
       { 
