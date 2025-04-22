@@ -199,12 +199,19 @@ describe('Conversation API - [id]', () => {
       });
 
       // Verify that all messages were deleted
-      expect(dynamoDB.delete).toHaveBeenCalledTimes(3); // 2 messages + 1 conversation
+      expect(dynamoDB.delete).toHaveBeenCalledTimes(4); // 2 messages + 1 conversation + 1 checkpoint
       expect(dynamoDB.delete).toHaveBeenCalledWith({
         TableName: 'test-table',
         Key: {
           pk: 'USER#test-user-id',
           sk: 'CHAT#test-conversation-id',
+        },
+      });
+      expect(dynamoDB.delete).toHaveBeenCalledWith({
+        TableName: 'test-table',
+        Key: {
+          pk: 'USER#test-user-id#CHAT#test-conversation-id',
+          sk: 'CHECKPOINT#latest',
         },
       });
     });
@@ -228,13 +235,20 @@ describe('Conversation API - [id]', () => {
       // Verify that messages were queried
       expect(dynamoDB.query).toHaveBeenCalled();
       
-      // Verify that only the conversation was deleted
-      expect(dynamoDB.delete).toHaveBeenCalledTimes(1);
+      // Verify that only the conversation and checkpoint were deleted
+      expect(dynamoDB.delete).toHaveBeenCalledTimes(2); // 1 conversation + 1 checkpoint
       expect(dynamoDB.delete).toHaveBeenCalledWith({
         TableName: 'test-table',
         Key: {
           pk: 'USER#test-user-id',
           sk: 'CHAT#test-conversation-id',
+        },
+      });
+      expect(dynamoDB.delete).toHaveBeenCalledWith({
+        TableName: 'test-table',
+        Key: {
+          pk: 'USER#test-user-id#CHAT#test-conversation-id',
+          sk: 'CHECKPOINT#latest',
         },
       });
     });
