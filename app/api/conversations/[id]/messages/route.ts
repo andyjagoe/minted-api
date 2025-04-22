@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
