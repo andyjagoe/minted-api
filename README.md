@@ -5,16 +5,13 @@ A modern REST API for AI-powered conversations, built with Next.js 14 and TypeSc
 ## Features
 
 - 🤖 AI-powered responses using LangChain
-- 🔐 Authentication with Clerk
+- 🧠 Message history and conversation memory
 - 💬 Conversation and message management
+- 🔐 Authentication with Clerk
 - 📝 Type-safe API with TypeScript
 - 🗄️ DynamoDB for scalable storage
 - 📚 OpenAPI documentation
 - 🧪 Comprehensive test coverage
-- 🔄 Pagination support for messages
-- 🔍 Real-time message updates
-- 🎯 Conversation title management
-- 🧠 Message history and conversation memory
 
 ## Tech Stack
 
@@ -157,14 +154,3 @@ The API uses standard HTTP status codes:
 - 404: Not Found
 - 500: Internal Server Error
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
