@@ -17,6 +17,10 @@ export interface LLMRequest {
   config?: LLMConfig;
   userId: string;
   conversationId: string;
+  userProfile?: {
+    name?: string;
+    email?: string;
+  };
 }
 
 export interface LLMStreamResponse {

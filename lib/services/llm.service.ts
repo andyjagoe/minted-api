@@ -204,8 +204,17 @@ export class LLMService {
       this.debugLog(`Invoking LLM (Streaming: ${state.isStreaming})...`);
       const currentMessages = await this.loadMessagesFromRefs(state.messageRefs, config);
 
+      // Get user profile from config
+      const userProfile = config?.configurable?.userProfile;
+      const systemMessage = userProfile 
+        ? `You are talking to ${userProfile.name || 'the user'}${userProfile.email ? ` (${userProfile.email})` : ''}.`
+        : 'You are talking to the user.';
+
       if (state.isStreaming) {
-        const stream = await this.model.stream(currentMessages, config);
+        const stream = await this.model.stream([
+          { type: 'system', content: systemMessage },
+          ...currentMessages
+        ], config);
         let finalMessage: AIMessage | null = null;
         let accumulatedContent = "";
         for await (const chunk of stream) {
@@ -221,7 +230,10 @@ export class LLMService {
         };
       } else {
         this.debugLog('Current messages:', currentMessages);
-        const response = await this.model.invoke(currentMessages, config);
+        const response = await this.model.invoke([
+          { type: 'system', content: systemMessage },
+          ...currentMessages
+        ], config);
         this.debugLog('LLM raw response:', response);
         
         const responseContent = getMessageContent(response.content);
@@ -376,7 +388,8 @@ export class LLMService {
     const finalState = await graph.invoke(initialState, {
       configurable: {
         userId: request.userId,
-        conversationId: request.conversationId
+        conversationId: request.conversationId,
+        userProfile: request.userProfile
       }
     });
 

@@ -187,7 +187,13 @@ export async function POST(
     const req: LLMRequest = {
       messages: [LLMService.createMessage(content, 'user')],
       userId: user.id,
-      conversationId
+      conversationId,
+      userProfile: {
+        name: user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user.firstName || user.username || undefined,
+        email: user.emailAddresses[0]?.emailAddress
+      }
     };
     
     if (process.env.LLM_DEBUG_MODE === 'true') {
