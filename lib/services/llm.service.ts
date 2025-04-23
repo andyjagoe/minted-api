@@ -172,7 +172,7 @@ export class LLMService {
     // Node to invoke the LLM
     graph.addNode('invokeLLM', async (state: GraphState, config?: RunnableConfig): Promise<Partial<GraphState>> => {
       console.log(`Invoking LLM (Streaming: ${state.isStreaming})...`);
-      const currentMessages = await this.loadMessagesFromRefs(state.messageRefs);
+      const currentMessages = await this.loadMessagesFromRefs(state.messageRefs, config);
 
       if (state.isStreaming) {
         const stream = await this.model.stream(currentMessages, config);
@@ -245,37 +245,50 @@ export class LLMService {
     return graph;
   }
 
-  private async loadMessagesFromRefs(refs: MessageReference[]): Promise<BaseMessage[]> {
-    const messages: BaseMessage[] = [];
-    for (const ref of refs) {
-      const message = await this.loadMessage(ref.messageId);
-      if (message) {
-        messages.push(message);
-      }
+  private async loadMessagesFromRefs(refs: MessageReference[], config?: RunnableConfig): Promise<BaseMessage[]> {
+    if (refs.length === 0) return [];
+
+    // Get userId and conversationId from the configurable options
+    const userId = config?.configurable?.userId;
+    const conversationId = config?.configurable?.conversationId;
+
+    if (!userId || !conversationId) {
+      console.error('Missing userId or conversationId in configurable options');
+      return [];
     }
-    return messages;
-  }
 
-  private async loadMessage(messageId: string): Promise<BaseMessage | null> {
-    try {
-      const result = await dynamoDB.get({
-        TableName: process.env.DYNAMODB_TABLE_NAME as string,
-        Key: {
-          pk: `MSG#${messageId}`,
-          sk: `MSG#${messageId}`
-        },
-      });
+    // Query all messages in a single operation
+    const result = await dynamoDB.query({
+      TableName: process.env.DYNAMODB_TABLE_NAME as string,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': `USER#${userId}#CHAT#${conversationId}`
+      },
+      ScanIndexForward: true
+    });
 
-      if (!result.Item) return null;
+    // Create a map of message IDs to their content
+    const messageMap = new Map(
+      (result.Items || []).map(item => [
+        item.pk.replace('MSG#', ''),
+        {
+          content: item.content,
+          isFromUser: item.isFromUser
+        }
+      ])
+    );
 
-      const { content, isFromUser } = result.Item;
-      return isFromUser 
-        ? new HumanMessage(content)
-        : new AIMessage(content);
-    } catch (error) {
-      console.error('Error loading message:', error);
-      return null;
-    }
+    // Return messages in the order of the refs array
+    return refs
+      .map(ref => {
+        const message = messageMap.get(ref.messageId);
+        if (!message) return null;
+        return ref.isFromUser
+          ? new HumanMessage(message.content)
+          : new AIMessage(message.content);
+      })
+      .filter((msg): msg is BaseMessage => msg !== null);
   }
 
   /**
@@ -341,8 +354,17 @@ export class LLMService {
 
     // Get the last message (which should be the assistant's response)
     const lastMessageRef = finalState.messageRefs[finalState.messageRefs.length - 1];
-    const lastMessage = await this.loadMessage(lastMessageRef.messageId);
     
+    // Get the last message directly using its ID
+    const result = await dynamoDB.get({
+      TableName: process.env.DYNAMODB_TABLE_NAME as string,
+      Key: {
+        pk: `MSG#${lastMessageRef.messageId}`,
+        sk: `MSG#${lastMessageRef.messageId}`
+      }
+    });
+
+    const lastMessage = result.Item;
     if (!lastMessage) {
       throw new Error('Failed to load assistant response');
     }

@@ -162,7 +162,7 @@ export async function POST(
       );
     }
 
-    const { id: conversationId } = params;
+    const { id: conversationId } = await params;
     if (!conversationId) {
       return NextResponse.json(
         { data: null, error: 'Conversation ID is required' },
