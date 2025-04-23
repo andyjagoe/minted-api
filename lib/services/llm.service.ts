@@ -86,6 +86,7 @@ export class LLMService {
   private graphDefinition: StateGraph<GraphState>;
   private config: LLMConfig;
   private checkpointSaver: DynamoDBCheckpointSaver;
+  private readonly isDebugMode: boolean;
 
   /**
    * Creates a new instance of LLMService
@@ -109,6 +110,7 @@ export class LLMService {
       maxTokens: config.maxTokens || 1000,
       streaming: config.streaming ?? true,
     };
+    this.isDebugMode = process.env.LLM_DEBUG_MODE === 'true';
     this.model = new ChatOpenAI({
       modelName: this.config.modelName,
       temperature: this.config.temperature,
@@ -117,6 +119,28 @@ export class LLMService {
     });
     this.checkpointSaver = new DynamoDBCheckpointSaver(process.env.DYNAMODB_TABLE_NAME as string);
     this.graphDefinition = this.buildGraphDefinition();
+  }
+
+  /**
+   * Logs a message if debug mode is enabled
+   * @param message - The message to log
+   * @param data - Optional data to log
+   */
+  private debugLog(message: string, data?: any): void {
+    if (this.isDebugMode) {
+      console.log(`[LLMService Debug] ${message}`, data ? data : '');
+    }
+  }
+
+  /**
+   * Logs an error if debug mode is enabled
+   * @param message - The error message to log
+   * @param error - The error object
+   */
+  private debugError(message: string, error: any): void {
+    if (this.isDebugMode) {
+      console.error(`[LLMService Debug] ${message}`, error);
+    }
   }
 
   /**
@@ -169,7 +193,7 @@ export class LLMService {
 
     // Node to prepare state for LLM call
     graph.addNode('processMessages', async (state: GraphState): Promise<Partial<GraphState>> => {
-      console.log('Processing messages...');
+      this.debugLog('Processing messages...');
       return {
         responseChunk: undefined,
       };
@@ -177,7 +201,7 @@ export class LLMService {
 
     // Node to invoke the LLM
     graph.addNode('invokeLLM', async (state: GraphState, config?: RunnableConfig): Promise<Partial<GraphState>> => {
-      console.log(`Invoking LLM (Streaming: ${state.isStreaming})...`);
+      this.debugLog(`Invoking LLM (Streaming: ${state.isStreaming})...`);
       const currentMessages = await this.loadMessagesFromRefs(state.messageRefs, config);
 
       if (state.isStreaming) {
@@ -196,12 +220,12 @@ export class LLMService {
           responseChunk: undefined,
         };
       } else {
-        console.log('Current messages:', currentMessages);
+        this.debugLog('Current messages:', currentMessages);
         const response = await this.model.invoke(currentMessages, config);
-        console.log('LLM raw response:', response);
+        this.debugLog('LLM raw response:', response);
         
         const responseContent = getMessageContent(response.content);
-        console.log('Processed response content:', responseContent);
+        this.debugLog('Processed response content:', responseContent);
         
         if (!responseContent) {
           throw new Error('Empty response from LLM');
@@ -259,7 +283,7 @@ export class LLMService {
     const conversationId = config?.configurable?.conversationId;
 
     if (!userId || !conversationId) {
-      console.error('Missing userId or conversationId in configurable options');
+      this.debugError('Missing userId or conversationId in configurable options', { userId, conversationId });
       return [];
     }
 
@@ -273,6 +297,8 @@ export class LLMService {
       },
       ScanIndexForward: true
     });
+
+    this.debugLog(`Loaded ${result.Items?.length || 0} messages for conversation ${conversationId}`);
 
     // Create a map of message IDs to their content
     const messageMap = new Map(

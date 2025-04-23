@@ -190,16 +190,22 @@ export async function POST(
       conversationId
     };
     
-    console.log('Getting LLM response...');
+    if (process.env.LLM_DEBUG_MODE === 'true') {
+      console.log('[Messages API Debug] Getting LLM response...');
+    }
     const res = await llm.ask(req);
-    console.log('LLM response:', res);
+    if (process.env.LLM_DEBUG_MODE === 'true') {
+      console.log('[Messages API Debug] LLM response:', res);
+    }
 
     if (!res) {
       throw new Error('No response received from LLM');
     }
 
     if (!res.content || res.content.trim() === '') {
-      console.error('Empty LLM response:', res);
+      if (process.env.LLM_DEBUG_MODE === 'true') {
+        console.error('[Messages API Debug] Empty LLM response:', res);
+      }
       throw new Error('Empty response received from LLM');
     }
 
