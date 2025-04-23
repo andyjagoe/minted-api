@@ -203,27 +203,36 @@ export async function POST(
       throw new Error('Empty response received from LLM');
     }
 
-    // Get the latest checkpoint to get both messages
-    const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
-    const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
-    const messageRefs = (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
-
-    // Only load the last two messages (user message and assistant response)
-    const lastTwoRefs = messageRefs.slice(-2);
-
-    // Load only the last two messages from DynamoDB
-    const messages = await Promise.all(
-      lastTwoRefs.map(async (ref: MessageReference) => {
-        const result = await dynamoDB.get({
-          TableName: tableName,
-          Key: {
-            pk: `MSG#${ref.messageId}`,
-            sk: `MSG#${ref.messageId}`
-          },
-        });
-        return result.Item as DynamoDBMessage | undefined;
-      })
-    );
+    // Get the latest checkpoint and load messages in parallel
+    const [checkpoint, messages] = await Promise.all([
+      // Get checkpoint
+      (async () => {
+        const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
+        const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
+        return (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
+      })(),
+      // Load messages
+      (async () => {
+        const messageRefs = await (async () => {
+          const checkpointSaver = new DynamoDBCheckpointSaver(tableName);
+          const checkpoint = await checkpointSaver.getTuple(user.id, conversationId, 'latest');
+          return (checkpoint?.[0]?.messageRefs || []) as MessageReference[];
+        })();
+        const lastTwoRefs = messageRefs.slice(-2);
+        return Promise.all(
+          lastTwoRefs.map(async (ref: MessageReference) => {
+            const result = await dynamoDB.get({
+              TableName: tableName,
+              Key: {
+                pk: `MSG#${ref.messageId}`,
+                sk: `MSG#${ref.messageId}`
+              },
+            });
+            return result.Item as DynamoDBMessage | undefined;
+          })
+        );
+      })()
+    ]);
 
     // Transform messages to match the desired format
     const transformedMessages = messages

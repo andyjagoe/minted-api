@@ -306,27 +306,31 @@ export class LLMService {
    */
   async ask(request: LLMRequest): Promise<LLMResponse> {
     const graph = this.compileGraph();
-    const checkpoint = await this.checkpointSaver.getTuple(request.userId, request.conversationId, 'latest');
     
     // Create a new message reference for the user's message
     const userMessageId = uuidv7();
     
-    // Store the user's message in DynamoDB
-    await dynamoDB.put({
-      TableName: process.env.DYNAMODB_TABLE_NAME as string,
-      Item: {
-        pk: `MSG#${userMessageId}`,
-        sk: `MSG#${userMessageId}`,
-        content: request.messages[0].content,
-        isFromUser: true,
-        conversationId: request.conversationId,
-        createdAt: Date.now(),
-        lastModified: Date.now(),
-        GSI1PK: `USER#${request.userId}#CHAT#${request.conversationId}`,
-        GSI1SK: Date.now(),
-        type: 'MSG'
-      }
-    });
+    // Store the user's message and get checkpoint in parallel
+    const [checkpoint] = await Promise.all([
+      // Get checkpoint
+      this.checkpointSaver.getTuple(request.userId, request.conversationId, 'latest'),
+      // Store user's message
+      dynamoDB.put({
+        TableName: process.env.DYNAMODB_TABLE_NAME as string,
+        Item: {
+          pk: `MSG#${userMessageId}`,
+          sk: `MSG#${userMessageId}`,
+          content: request.messages[0].content,
+          isFromUser: true,
+          conversationId: request.conversationId,
+          createdAt: Date.now(),
+          lastModified: Date.now(),
+          GSI1PK: `USER#${request.userId}#CHAT#${request.conversationId}`,
+          GSI1SK: Date.now(),
+          type: 'MSG'
+        }
+      })
+    ]);
 
     // Initialize state with existing messages and the new user message
     const initialState: GraphState = {
@@ -344,27 +348,30 @@ export class LLMService {
       }
     });
 
-    await this.checkpointSaver.putTuple(
-      request.userId,
-      request.conversationId,
-      'latest',
-      { messageRefs: finalState.messageRefs },
-      { source: 'input', step: 1, writes: null, parents: {} }
-    );
+    // Store the assistant's message and update checkpoint in parallel
+    const [lastMessage] = await Promise.all([
+      // Get the last message
+      (async () => {
+        const lastMessageRef = finalState.messageRefs[finalState.messageRefs.length - 1];
+        const result = await dynamoDB.get({
+          TableName: process.env.DYNAMODB_TABLE_NAME as string,
+          Key: {
+            pk: `MSG#${lastMessageRef.messageId}`,
+            sk: `MSG#${lastMessageRef.messageId}`
+          }
+        });
+        return result.Item;
+      })(),
+      // Update checkpoint
+      this.checkpointSaver.putTuple(
+        request.userId,
+        request.conversationId,
+        'latest',
+        { messageRefs: finalState.messageRefs },
+        { source: 'input', step: 1, writes: null, parents: {} }
+      )
+    ]);
 
-    // Get the last message (which should be the assistant's response)
-    const lastMessageRef = finalState.messageRefs[finalState.messageRefs.length - 1];
-    
-    // Get the last message directly using its ID
-    const result = await dynamoDB.get({
-      TableName: process.env.DYNAMODB_TABLE_NAME as string,
-      Key: {
-        pk: `MSG#${lastMessageRef.messageId}`,
-        sk: `MSG#${lastMessageRef.messageId}`
-      }
-    });
-
-    const lastMessage = result.Item;
     if (!lastMessage) {
       throw new Error('Failed to load assistant response');
     }
