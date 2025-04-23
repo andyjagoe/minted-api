@@ -60,6 +60,7 @@ A modern REST API for AI-powered conversations, built with Next.js 14 and TypeSc
    - `AWS_SECRET_ACCESS_KEY`
    - `AWS_REGION`
    - `OPENAI_API_KEY`
+   - `LLM_DEBUG_MODE` (optional, set to 'true' to enable debug logging)
 
 4. Start the development server:
    ```bash
