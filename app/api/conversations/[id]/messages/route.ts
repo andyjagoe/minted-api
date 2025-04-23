@@ -183,7 +183,7 @@ export async function POST(
     }
 
     // Get LLM response
-    const llm = new LLMService();
+    const llm = LLMService.getInstance();
     const req: LLMRequest = {
       messages: [LLMService.createMessage(content, 'user')],
       userId: user.id,

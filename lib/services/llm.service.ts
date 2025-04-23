@@ -80,21 +80,29 @@ function getMessageContent(content: any): string {
  * with language models, using LangGraph for state management and workflow control.
  */
 export class LLMService {
+  private static instance: LLMService | null = null;
+  private static compiledGraph: CompiledStateGraph<GraphState, GraphState> | null = null;
   private model: ChatOpenAI;
   private graphDefinition: StateGraph<GraphState>;
-  private compiledGraph: CompiledStateGraph<GraphState, GraphState> | null = null;
   private config: LLMConfig;
   private checkpointSaver: DynamoDBCheckpointSaver;
 
   /**
    * Creates a new instance of LLMService
    * @param config - Configuration options for the LLM service
-   * @param config.modelName - The name of the model to use (default: 'gpt-3.5-turbo')
-   * @param config.temperature - The temperature setting for the model (default: 0.7)
-   * @param config.maxTokens - Maximum number of tokens to generate (default: 1000)
-   * @param config.streaming - Whether to enable streaming by default (default: true)
+   * @returns The singleton instance of LLMService
    */
-  constructor(config: LLMConfig = {}) {
+  static getInstance(config: LLMConfig = {}): LLMService {
+    if (!LLMService.instance) {
+      LLMService.instance = new LLMService(config);
+    }
+    return LLMService.instance;
+  }
+
+  /**
+   * Private constructor to enforce singleton pattern
+   */
+  private constructor(config: LLMConfig = {}) {
     this.config = {
       modelName: config.modelName || 'gpt-3.5-turbo',
       temperature: config.temperature || 0.7,
@@ -108,8 +116,6 @@ export class LLMService {
       streaming: true,
     });
     this.checkpointSaver = new DynamoDBCheckpointSaver(process.env.DYNAMODB_TABLE_NAME as string);
-
-    // Initialize the LangGraph *definition*
     this.graphDefinition = this.buildGraphDefinition();
   }
 
@@ -119,19 +125,19 @@ export class LLMService {
    * @throws Error if graph compilation fails
    */
   private compileGraph(): CompiledStateGraph<GraphState, GraphState> {
-    if (!this.compiledGraph) {
+    if (!LLMService.compiledGraph) {
       // Define edges just before compilation
       this.graphDefinition.addEdge(START, 'processMessages' as any);
       this.graphDefinition.addEdge('processMessages' as any, 'invokeLLM' as any);
       this.graphDefinition.addEdge('invokeLLM' as any, END);
 
-      this.compiledGraph = this.graphDefinition.compile() as CompiledStateGraph<GraphState, GraphState>;
+      LLMService.compiledGraph = this.graphDefinition.compile() as CompiledStateGraph<GraphState, GraphState>;
 
-      if (!this.compiledGraph) {
+      if (!LLMService.compiledGraph) {
         throw new Error("Graph compilation failed unexpectedly.");
       }
     }
-    return this.compiledGraph;
+    return LLMService.compiledGraph;
   }
 
   /**
@@ -470,7 +476,7 @@ export class LLMService {
    * ```
    */
   addFeatureNode(nodeName: string, nodeFn: (state: GraphState) => Promise<Partial<GraphState>>) {
-    if (this.compiledGraph) {
+    if (LLMService.compiledGraph) {
       throw new Error("Cannot add nodes after the graph has been compiled. Define all nodes before calling 'ask' or 'askStream'.");
     }
     this.graphDefinition.addNode(nodeName, nodeFn);
