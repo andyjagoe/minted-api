@@ -67,6 +67,27 @@ A modern REST API for AI-powered conversations, built with Next.js 14 and TypeSc
    pnpm dev
    ```
 
+## Development Workflow
+
+### Running Tests
+```bash
+pnpm test        # Run all tests
+pnpm test:watch  # Run tests in watch mode
+pnpm test:coverage  # Generate test coverage report
+```
+
+### Code Quality
+```bash
+pnpm lint        # Run ESLint
+pnpm format      # Format code with Prettier
+```
+
+### Building for Production
+```bash
+pnpm build       # Build the application
+pnpm start       # Start the production server
+```
+
 ## API Documentation
 
 The API documentation is available at `/api-docs` when running the application locally. It provides detailed information about all available endpoints, request/response formats, and authentication requirements.
@@ -136,13 +157,6 @@ For message creation, the response includes both the user message and AI respons
   },
   error: null
 }
-```
-
-## Testing
-
-Run the test suite:
-```bash
-pnpm test
 ```
 
 ## Error Handling
