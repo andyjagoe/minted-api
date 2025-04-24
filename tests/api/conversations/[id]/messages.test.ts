@@ -29,32 +29,38 @@ vi.mock('@/lib/types/message.types', () => ({
 }));
 
 // Mock LLM service
-vi.mock('@/lib/services/llm.service', () => ({
-  LLMService: Object.assign(
-    vi.fn().mockImplementation(() => ({
-      ask: vi.fn().mockResolvedValue({
-        content: 'AI response',
-        isFromUser: false,
-      })
-    })),
-    {
+vi.mock('@/lib/services/llm.service', () => {
+  const mockInstance = {
+    ask: vi.fn().mockResolvedValue({
+      content: 'AI response',
+      isFromUser: false,
+    }),
+    createMessage: vi.fn().mockImplementation((content: string) => ({
+      pk: expect.stringMatching(/^MSG#/),
+      sk: expect.any(Number),
+      type: 'MSG',
+      isFromUser: true,
+      conversationId: mockParams.id,
+      userId: mockUserId,
+      content: content,
+      role: 'user',
+      createdAt: expect.any(Number),
+      lastModified: expect.any(Number),
+      GSI1PK: `USER#${mockUserId}#CHAT#${mockParams.id}`,
+      GSI1SK: expect.stringMatching(/^MSG#/),
+    }))
+  };
+
+  return {
+    LLMService: {
+      getInstance: vi.fn().mockReturnValue(mockInstance),
       createMessage: vi.fn().mockImplementation((content: string) => ({
-        pk: expect.stringMatching(/^MSG#/),
-        sk: expect.any(Number),
-        type: 'MSG',
-        isFromUser: true,
-        conversationId: mockParams.id,
-        userId: mockUserId,
-        content: content,
-        role: 'user',
-        createdAt: expect.any(Number),
-        lastModified: expect.any(Number),
-        GSI1PK: `USER#${mockUserId}#CHAT#${mockParams.id}`,
-        GSI1SK: expect.stringMatching(/^MSG#/),
+        content,
+        role: 'user'
       }))
     }
-  )
-}));
+  };
+});
 
 // Mock checkpoint service
 vi.mock('@/lib/services/checkpoint.service', () => ({
@@ -413,18 +419,11 @@ describe('Conversation Messages API', () => {
       };
 
       // Mock LLM service to fail
-      const mockService = Object.assign(
-        vi.fn().mockImplementation(() => ({
-          ask: vi.fn().mockRejectedValueOnce(new Error('LLM error'))
-        })),
-        {
-          createMessage: vi.fn().mockReturnValue({
-            content: 'User message',
-            role: 'user',
-          })
-        }
-      );
-      vi.mocked(LLMService).mockImplementation(() => mockService());
+      const mockInstance = {
+        ask: vi.fn().mockRejectedValueOnce(new Error('LLM error')),
+      };
+
+      vi.mocked(LLMService.getInstance).mockReturnValueOnce(mockInstance as any);
 
       const response = await POST(mockRequest({ body: mockBody }), { params: mockParams });
       const data = await response.json();
