@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
-import { SimpleLLMService } from '@/lib/services/simpleLlm.service';
+import { SimpleLLMService } from '@/lib/services/simple.llm.service';
 import { LLMRequest } from '@/lib/types/llm.types';
 
 export async function POST(
