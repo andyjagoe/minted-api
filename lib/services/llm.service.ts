@@ -207,7 +207,7 @@ export class LLMService {
       // Get user profile from config
       const userProfile = config?.configurable?.userProfile;
       const systemMessage = userProfile 
-        ? `You are talking to ${userProfile.name || 'the user'}${userProfile.email ? ` (${userProfile.email})` : ''}.`
+        ? `You are talking to ${userProfile.name || 'the user'}.`
         : 'You are talking to the user.';
 
       if (state.isStreaming) {
