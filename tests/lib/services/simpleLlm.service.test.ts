@@ -2,23 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SimpleLLMService } from '@/lib/services/simpleLlm.service';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
-import { Runnable, RunnableConfig } from '@langchain/core/runnables';
-import { BaseLanguageModelInput } from '@langchain/core/language_models/base';
-import { AIMessageChunk } from '@langchain/core/messages';
-import { ChatOpenAICallOptions } from '@langchain/openai';
-import { IterableReadableStream } from '@langchain/core/utils/stream';
-import { Tool } from '@langchain/core/tools';
 
 // Mock ChatOpenAI
 vi.mock('@langchain/openai', () => ({
   ChatOpenAI: vi.fn().mockImplementation(() => ({
     invoke: vi.fn().mockResolvedValue({ content: 'AI response' }),
-    callKeys: {},
+    callKeys: [] as string[],
     lc_serializable: true,
     lc_secrets: {},
     lc_aliases: {},
-    lc_namespace: ['langchain', 'chat_models', 'openai'],
-  })),
+    lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
+  } as unknown as ChatOpenAI)),
 }));
 
 describe('SimpleLLMService', () => {
@@ -95,12 +89,12 @@ describe('SimpleLLMService', () => {
     it('should handle string content in response', async () => {
       vi.mocked(ChatOpenAI).mockImplementation(() => ({
         invoke: vi.fn().mockResolvedValue({ content: 'String response' }),
-        callKeys: {},
+        callKeys: [] as string[],
         lc_serializable: true,
         lc_secrets: {},
         lc_aliases: {},
-        lc_namespace: ['langchain', 'chat_models', 'openai'],
-      }));
+        lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
+      } as unknown as ChatOpenAI));
 
       const service = SimpleLLMService.getInstance();
       const response = await service.ask(mockRequest);
@@ -111,12 +105,12 @@ describe('SimpleLLMService', () => {
     it('should handle array content in response', async () => {
       vi.mocked(ChatOpenAI).mockImplementation(() => ({
         invoke: vi.fn().mockResolvedValue({ content: ['Part 1', 'Part 2'] }),
-        callKeys: {},
+        callKeys: [] as string[],
         lc_serializable: true,
         lc_secrets: {},
         lc_aliases: {},
-        lc_namespace: ['langchain', 'chat_models', 'openai'],
-      }));
+        lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
+      } as unknown as ChatOpenAI));
 
       const service = SimpleLLMService.getInstance();
       const response = await service.ask(mockRequest);
@@ -127,12 +121,12 @@ describe('SimpleLLMService', () => {
     it('should throw error on empty response', async () => {
       vi.mocked(ChatOpenAI).mockImplementation(() => ({
         invoke: vi.fn().mockResolvedValue({ content: '' }),
-        callKeys: {},
+        callKeys: [] as string[],
         lc_serializable: true,
         lc_secrets: {},
         lc_aliases: {},
-        lc_namespace: ['langchain', 'chat_models', 'openai'],
-      }));
+        lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
+      } as unknown as ChatOpenAI));
 
       const service = SimpleLLMService.getInstance();
       await expect(service.ask(mockRequest)).rejects.toThrow('Empty response from LLM');
@@ -142,87 +136,13 @@ describe('SimpleLLMService', () => {
       process.env.LLM_DEBUG_MODE = 'true';
       const consoleSpy = vi.spyOn(console, 'log');
 
-      // Set up mock with non-empty response
       vi.mocked(ChatOpenAI).mockImplementation(() => ({
-        invoke: vi.fn().mockResolvedValue({ content: 'Debug test response' }),
-        callKeys: ['model', 'temperature', 'maxTokens'],
+        invoke: vi.fn().mockResolvedValue({ content: 'Debug response' }),
+        callKeys: [] as string[],
         lc_serializable: true,
-        lc_secrets: {} as Record<string, string>,
-        lc_aliases: {} as Record<string, string>,
+        lc_secrets: {},
+        lc_aliases: {},
         lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
-        lc_serializable_keys: ['model', 'temperature', 'maxTokens'] as string[],
-        modelName: 'gpt-3.5-turbo',
-        model: 'gpt-3.5-turbo',
-        streaming: false,
-        temperature: 0.7,
-        maxTokens: 1000,
-        maxRetries: 3,
-        maxConcurrency: 1,
-        verbose: false,
-        timeout: 60000,
-        cache: undefined,
-        tags: ['chat', 'gpt'] as string[],
-        metadata: {} as Record<string, unknown>,
-        callbacks: [] as any[],
-        client: {} as any,
-        clientConfig: {} as any,
-        streamUsage: false,
-        useResponsesApi: false,
-        completionParams: {} as any,
-        baseUrl: undefined,
-        apiKey: undefined,
-        organization: undefined,
-        prefixMessages: [] as any[],
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-        n: 1,
-        logitBias: undefined,
-        stop: undefined,
-        user: undefined,
-        defaultHeaders: {} as Record<string, string>,
-        defaultQuery: {} as Record<string, string>,
-        streaming_options: {} as any,
-        getLlmString: () => 'gpt-3.5-turbo',
-        invocationParams: () => ({
-          model: 'gpt-3.5-turbo',
-          temperature: 0.7,
-          max_tokens: 1000,
-          stream: false,
-        }),
-        bindTools: (tools: Tool[], kwargs?: Partial<ChatOpenAICallOptions>) => {
-          return {
-            lc_runnable: true,
-            lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
-            invoke: async () => new AIMessageChunk({ content: 'Debug test response' }),
-            batch: async (inputs: BaseLanguageModelInput[], options?: RunnableConfig) => {
-              return inputs.map(() => new AIMessageChunk({ content: 'Debug test response' }));
-            },
-            stream: async () => {
-              const stream = new TransformStream<AIMessageChunk>();
-              const writer = stream.writable.getWriter();
-              writer.write(new AIMessageChunk({ content: 'Debug test response' }));
-              writer.close();
-              return stream.readable as IterableReadableStream<AIMessageChunk>;
-            },
-            getName: () => 'ChatOpenAI',
-            bind: function() { return this; },
-            withConfig: function() { return this; },
-            withRetry: function() { return this; },
-            map: function() { return this; },
-            pipe: function() { return this; },
-            _getOptionsList: function() { return []; },
-            _separateRunnableConfigFromCallOptions: function() { return [{}, {}]; },
-            _callWithConfig: async function() { return new AIMessageChunk({ content: 'Debug test response' }); }
-          } as unknown as Runnable<BaseLanguageModelInput, AIMessageChunk, ChatOpenAICallOptions>;
-        },
-        createResponseFormat: () => ({
-          type: 'text',
-          response_format: { type: 'text' }
-        }),
-        getLsParams: () => ({
-          ls_model_type: 'chat',
-          ls_run_type: 'llm',
-        }),
       } as unknown as ChatOpenAI));
 
       const service = SimpleLLMService.getInstance();
@@ -230,7 +150,7 @@ describe('SimpleLLMService', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[SimpleLLMService Debug] Sending request to LLM...',
-        expect.any(String)
+        expect.anything()
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         '[SimpleLLMService Debug] Messages:',
@@ -238,19 +158,20 @@ describe('SimpleLLMService', () => {
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         '[SimpleLLMService Debug] LLM response:',
-        expect.any(Object)
+        expect.objectContaining({ content: 'Debug response' })
       );
     });
 
     it('should handle LLM errors', async () => {
+      const mockError = new Error('LLM error');
       vi.mocked(ChatOpenAI).mockImplementation(() => ({
-        invoke: vi.fn().mockRejectedValue(new Error('LLM error')),
-        callKeys: {},
+        invoke: vi.fn().mockRejectedValue(mockError),
+        callKeys: [] as string[],
         lc_serializable: true,
         lc_secrets: {},
         lc_aliases: {},
-        lc_namespace: ['langchain', 'chat_models', 'openai'],
-      }));
+        lc_namespace: ['langchain', 'chat_models', 'openai'] as string[],
+      } as unknown as ChatOpenAI));
 
       const service = SimpleLLMService.getInstance();
       await expect(service.ask(mockRequest)).rejects.toThrow('LLM error');
