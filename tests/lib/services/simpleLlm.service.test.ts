@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SimpleLLMService } from '@/lib/services/simpleLLM.service';
+import { SimpleLLMService } from '@/lib/services/simpleLlm.service';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { Runnable, RunnableConfig } from '@langchain/core/runnables';
