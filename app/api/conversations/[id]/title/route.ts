@@ -3,9 +3,8 @@ export const maxDuration = 60
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { dynamoDB } from '@/lib/utils/dynamodb';
-import { LLMService } from '@/lib/services/llm.service';
+import { SimpleLLMService } from '@/lib/services/simpleLlm.service';
 import { LLMRequest } from '@/lib/types/llm.types';
-
 
 export async function POST(
   request: Request,
@@ -47,11 +46,10 @@ export async function POST(
     }
 
     // Generate title using AI
-    /*
-    const llm = new LLMService();
+    const llm = SimpleLLMService.getInstance();
     const req: LLMRequest = {
       messages: [
-        LLMService.createMessage(
+        SimpleLLMService.createMessage(
           `Generate a concise, descriptive title (4 words or less) for a conversation that contains this content: "${content}"`,
           'user'
         )
@@ -61,7 +59,6 @@ export async function POST(
     };
     const res = await llm.ask(req);
     const title = res.content.trim();
-    */
 
     // Update conversation title
     await dynamoDB.update({
@@ -72,13 +69,13 @@ export async function POST(
       },
       UpdateExpression: 'SET title = :title, lastModified = :now',
       ExpressionAttributeValues: {
-        ':title': content,        
+        ':title': title,        
         ':now': Date.now()
       }
     });
 
     return NextResponse.json(
-      { data: { title: content }, error: null },
+      { data: { title }, error: null },
       { status: 200 }
     );
   } catch (error) {
